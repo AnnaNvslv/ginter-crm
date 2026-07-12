@@ -1,5 +1,5 @@
 function fmtMoney(n) {
-  return (Number(n) || 0).toLocaleString('sr-RS', { minimumFractionDigits: 0 }) + ' дин.';
+  return (Number(n) || 0).toLocaleString('sr-RS', { minimumFractionDigits: 0 }) + ' RSD';
 }
 
 function fmtDate(iso) {
@@ -36,7 +36,7 @@ function toast(msg, isError = false) {
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-const PURPOSES = ['для дали', 'для близи', 'для компьютера', 'для постоянного ношения', 'прогрессивные', 'бифокальные'];
+const PURPOSES = ['za daljinu', 'za blizinu', 'za kompjuter', 'za stalno nošenje', 'progresivna', 'bifokalna'];
 
 function purposeOptions(selected = '') {
   return PURPOSES.map(p => `<option value="${p}" ${p === selected ? 'selected' : ''}>${p}</option>`).join('');
