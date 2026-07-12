@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ginter Optika — вход</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-box {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 380px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(26,109,181,0.08);
+  }
+  .login-box h1 { font-size: 26px; margin-bottom: 32px; color: var(--accent); }
+  .user-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .user-list button { width: 100%; }
+  .password-screen { display: none; flex-direction: column; gap: 16px; }
+  .password-screen.active { display: flex; }
+  .user-list.hidden { display: none; }
+  #error-msg { color: var(--danger); font-size: 15px; display: none; }
+  .back-link { color: var(--text-light); font-size: 15px; margin-top: 8px; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>Ginter Optika</h1>
+
+    <div class="user-list" id="user-list">
+      <button class="btn-primary" onclick="selectUser('Ervin')">Ervin</button>
+      <button class="btn-primary" onclick="selectUser('Bojana')">Bojana</button>
+      <button class="btn-primary" onclick="selectUser('Anna')">Anna</button>
+    </div>
+
+    <div class="password-screen" id="password-screen">
+      <input type="password" id="password-input" placeholder="Пароль" autofocus>
+      <button class="btn-primary" id="login-btn">Войти</button>
+      <p id="error-msg">Неверный пароль</p>
+      <p class="back-link" onclick="backToUsers()">← Назад</p>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let selectedUser = null;
+
+  function selectUser(name) {
+    selectedUser = name;
+    document.getElementById('user-list').classList.add('hidden');
+    document.getElementById('password-screen').classList.add('active');
+    document.getElementById('password-input').focus();
+  }
+
+  function backToUsers() {
+    selectedUser = null;
+    document.getElementById('user-list').classList.remove('hidden');
+    document.getElementById('password-screen').classList.remove('active');
+    document.getElementById('error-msg').style.display = 'none';
+    document.getElementById('password-input').value = '';
+  }
+
+  async function tryLogin() {
+    const pw = document.getElementById('password-input').value;
+    const result = await login(selectedUser, pw);
+    if (result.ok) {
+      location.href = 'crm.html';
+    } else {
+      document.getElementById('error-msg').style.display = 'block';
+    }
+  }
+
+  document.getElementById('login-btn').addEventListener('click', tryLogin);
+  document.getElementById('password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  });
+</script>
+</body>
+</html>
