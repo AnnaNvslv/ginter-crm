@@ -9,7 +9,7 @@ async function loadPatients() {
     .is('deleted_at', null)
     .order('name');
 
-  if (error) { toast('Ошибка загрузки пациентов', true); return; }
+  if (error) { toast('Greška pri učitavanju pacijenata', true); return; }
   currentPatients = data;
   renderPatientList();
 }
@@ -23,10 +23,10 @@ function renderPatientList(filter = '') {
 
   list.innerHTML = filtered.map(p => `
     <div class="patient-item ${p.id === activePatientId ? 'active' : ''}" onclick="openPatient('${p.id}')">
-      <div class="name">${p.name}${p.tkt ? ' <span class="badge">ТКТ</span>' : ''}</div>
-      <div class="meta">${p.phone || 'без телефона'} · ${fmtDate(p.visit_date)}</div>
+      <div class="name">${p.name}${p.tkt ? ' <span class="badge">TKT</span>' : ''}</div>
+      <div class="meta">${p.phone || 'bez telefona'} · ${fmtDate(p.visit_date)}</div>
     </div>
-  `).join('') || '<div class="empty-state" style="height:auto;padding:40px 20px;">Пациенты не найдены</div>';
+  `).join('') || '<div class="empty-state" style="height:auto;padding:40px 20px;">Pacijenti nisu pronađeni</div>';
 }
 
 async function openPatient(id) {
@@ -46,21 +46,21 @@ async function renderPatientCard() {
       <div>
         <h2>${patient.name}</h2>
         <div class="badges">
-          ${patient.age ? `<span class="badge">${patient.age} лет</span>` : ''}
-          ${patient.tkt ? `<span class="badge">ТКТ</span>` : ''}
+          ${patient.age ? `<span class="badge">${patient.age} god.</span>` : ''}
+          ${patient.tkt ? `<span class="badge">TKT</span>` : ''}
           ${patient.phone ? `<span class="badge">${patient.phone}</span>` : ''}
         </div>
       </div>
       <div style="display:flex;gap:10px;">
-        <button class="btn-secondary" onclick="openEditPatientModal()">Редактировать</button>
-        <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePatient()">Удалить</button>
+        <button class="btn-secondary" onclick="openEditPatientModal()">Izmeni</button>
+        <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePatient()">Obriši</button>
       </div>
     </div>
 
     <div class="tabs">
-      <div class="tab ${activeTab === 'info' ? 'active' : ''}" onclick="switchTab('info')">Инфо</div>
-      <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" onclick="switchTab('prescriptions')">Рецепты</div>
-      <div class="tab ${activeTab === 'orders' ? 'active' : ''}" onclick="switchTab('orders')">Заказы</div>
+      <div class="tab ${activeTab === 'info' ? 'active' : ''}" onclick="switchTab('info')">Info</div>
+      <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" onclick="switchTab('prescriptions')">Recepti</div>
+      <div class="tab ${activeTab === 'orders' ? 'active' : ''}" onclick="switchTab('orders')">Porudžbine</div>
     </div>
 
     <div id="tab-content"></div>
@@ -88,18 +88,18 @@ function renderInfoTab() {
   document.getElementById('tab-content').innerHTML = `
     <div class="list-card">
       <div class="kv-row">
-        <span><b>Дата обращения:</b> ${fmtDate(patient.visit_date)}</span>
-        <span><b>Возраст:</b> ${patient.age || '—'}</span>
-        <span><b>Телефон:</b> ${patient.phone || '—'}</span>
-        <span><b>ТКТ:</b> ${patient.tkt ? 'да' : 'нет'}</span>
+        <span><b>Datum posete:</b> ${fmtDate(patient.visit_date)}</span>
+        <span><b>Godine:</b> ${patient.age || '—'}</span>
+        <span><b>Telefon:</b> ${patient.phone || '—'}</span>
+        <span><b>TKT:</b> ${patient.tkt ? 'da' : 'ne'}</span>
       </div>
-      ${patient.notes ? `<div style="margin-top:14px;"><b>Заметки:</b> ${patient.notes}</div>` : ''}
+      ${patient.notes ? `<div style="margin-top:14px;"><b>Napomene:</b> ${patient.notes}</div>` : ''}
     </div>
   `;
 }
 
 function openAddPatientModal() {
-  document.getElementById('patient-modal-title').textContent = 'Новый пациент';
+  document.getElementById('patient-modal-title').textContent = 'Novi pacijent';
   document.getElementById('patient-form').reset();
   document.getElementById('patient-form-id').value = '';
   document.getElementById('patient-form-visit-date').value = todayISO();
@@ -108,7 +108,7 @@ function openAddPatientModal() {
 
 function openEditPatientModal() {
   const patient = currentPatients.find(p => p.id === activePatientId);
-  document.getElementById('patient-modal-title').textContent = 'Редактировать пациента';
+  document.getElementById('patient-modal-title').textContent = 'Izmena pacijenta';
   document.getElementById('patient-form-id').value = patient.id;
   document.getElementById('patient-form-name').value = patient.name;
   document.getElementById('patient-form-age').value = patient.age || '';
@@ -131,7 +131,7 @@ async function savePatientForm(e) {
     notes: document.getElementById('patient-form-notes').value.trim() || null,
   };
 
-  if (!payload.name) { toast('Введите имя пациента', true); return; }
+  if (!payload.name) { toast('Unesite ime pacijenta', true); return; }
 
   let error;
   if (id) {
@@ -140,20 +140,20 @@ async function savePatientForm(e) {
     ({ error } = await sb.from('patients').insert(payload));
   }
 
-  if (error) { toast('Ошибка сохранения', true); return; }
+  if (error) { toast('Greška pri čuvanju', true); return; }
 
   closeModal('patient-modal');
-  toast('Сохранено');
+  toast('Sačuvano');
   await loadPatients();
   if (id) await renderPatientCard();
 }
 
 async function deletePatient() {
-  if (!confirm('Удалить пациента? Это можно будет восстановить только через базу данных.')) return;
+  if (!confirm('Obrisati pacijenta? Ovo se može vratiti samo preko baze podataka.')) return;
   const { error } = await sb.from('patients').update({ deleted_at: new Date().toISOString() }).eq('id', activePatientId);
-  if (error) { toast('Ошибка удаления', true); return; }
+  if (error) { toast('Greška pri brisanju', true); return; }
   activePatientId = null;
-  document.getElementById('content').innerHTML = '<div class="empty-state">Выберите пациента слева</div>';
-  toast('Пациент удалён');
+  document.getElementById('content').innerHTML = '<div class="empty-state">Izaberite pacijenta sa leve strane</div>';
+  toast('Pacijent obrisan');
   await loadPatients();
 }
