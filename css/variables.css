@@ -1,0 +1,13 @@
+:root {
+  --white: #FFFFFF;
+  --section-bg: #F0F6FF;
+  --accent: #1A6DB5;
+  --accent-dark: #14588f;
+  --text: #1F2937;
+  --text-light: #6B7280;
+  --border: #DCE6F2;
+  --danger: #C0392B;
+  --radius: 14px;
+  --font-heading: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
