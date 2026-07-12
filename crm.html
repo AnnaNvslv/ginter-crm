@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ginter Optika — CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/crm.css">
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Ginter Optika</h1>
+      <input type="text" id="search-input" placeholder="Поиск пациента..." oninput="renderPatientList(this.value)">
+      <button class="btn-primary" style="width:100%;" onclick="openAddPatientModal()">+ Новый пациент</button>
+    </div>
+    <div class="patient-list" id="patient-list"></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="user">Вы вошли как <b id="current-user-name"></b></div>
+      <button class="btn-secondary" onclick="logout()">Выйти</button>
+    </div>
+    <div class="content" id="content">
+      <div class="empty-state">Выберите пациента слева</div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка: Пациент -->
+<div class="modal-overlay" id="patient-modal">
+  <div class="modal">
+    <h3 id="patient-modal-title">Новый пациент</h3>
+    <form id="patient-form" onsubmit="savePatientForm(event)">
+      <input type="hidden" id="patient-form-id">
+      <div class="field-grid">
+        <div style="grid-column:1/-1;">
+          <label>Фамилия и имя *</label>
+          <input type="text" id="patient-form-name" required>
+        </div>
+        <div>
+          <label>Возраст</label>
+          <input type="number" id="patient-form-age" min="0" max="120">
+        </div>
+        <div>
+          <label>Телефон</label>
+          <input type="text" id="patient-form-phone">
+        </div>
+        <div>
+          <label>Дата обращения</label>
+          <input type="date" id="patient-form-visit-date">
+        </div>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="patient-form-tkt">
+        <label for="patient-form-tkt">ТКТ</label>
+      </div>
+      <label>Заметки</label>
+      <textarea id="patient-form-notes" rows="3" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('patient-modal')">Отмена</button>
+        <button type="submit" class="btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Модалка: Рецепт -->
+<div class="modal-overlay" id="rx-modal">
+  <div class="modal">
+    <h3 id="rx-modal-title">Новый рецепт</h3>
+    <form id="rx-form" onsubmit="savePrescriptionForm(event)">
+      <input type="hidden" id="rx-form-id">
+      <label>Назначение *</label>
+      <select id="rx-form-purpose" required style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;">
+      </select>
+
+      <div class="rx-grid">
+        <div class="eye-label">OD (правый глаз)</div>
+        <div><label>Sph</label><input type="number" step="0.25" id="rx-form-od_sph"></div>
+        <div><label>Cyl</label><input type="number" step="0.25" id="rx-form-od_cyl"></div>
+        <div><label>Ax</label><input type="number" id="rx-form-od_ax"></div>
+        <div></div>
+
+        <div class="eye-label">OS (левый глаз)</div>
+        <div><label>Sph</label><input type="number" step="0.25" id="rx-form-os_sph"></div>
+        <div><label>Cyl</label><input type="number" step="0.25" id="rx-form-os_cyl"></div>
+        <div><label>Ax</label><input type="number" id="rx-form-os_ax"></div>
+        <div></div>
+
+        <div class="eye-label">Общее</div>
+        <div><label>Add</label><input type="number" step="0.25" id="rx-form-add"></div>
+        <div><label>Degr</label><input type="number" step="0.25" id="rx-form-degr"></div>
+        <div><label>PD</label><input type="number" step="0.5" id="rx-form-pd"></div>
+        <div></div>
+      </div>
+
+      <div class="checkbox-row" style="margin-top:16px;">
+        <input type="checkbox" id="rx-form-client">
+        <label for="rx-form-client">Рецепт клиента</label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('rx-modal')">Отмена</button>
+        <button type="submit" class="btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Модалка: Заказ -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal">
+    <h3 id="order-modal-title">Новый заказ</h3>
+    <form id="order-form" onsubmit="saveOrderForm(event)">
+      <input type="hidden" id="order-form-id">
+
+      <div class="type-toggle">
+        <button type="button" data-type="glasses" class="active" onclick="setOrderType('glasses')">👓 Очки</button>
+        <button type="button" data-type="contact_lenses" onclick="setOrderType('contact_lenses')">👁 Контактные линзы</button>
+      </div>
+
+      <div class="field-grid">
+        <div>
+          <label>Дата оформления</label>
+          <input type="date" id="order-form-date">
+        </div>
+        <div>
+          <label>Номер заказа (с конверта)</label>
+          <input type="text" id="order-form-envelope">
+        </div>
+        <div>
+          <label>Назначение заказа</label>
+          <select id="order-form-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
+        </div>
+        <div>
+          <label>Привязать рецепт</label>
+          <select id="order-form-prescription" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
+        </div>
+      </div>
+
+      <div id="glasses-fields">
+        <h3 style="font-size:18px;margin:16px 0 10px;">Оправа</h3>
+        <div class="field-grid">
+          <div>
+            <label>Назначение оправы</label>
+            <select id="order-form-frame-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
+          </div>
+          <div>
+            <label>Цена оправы</label>
+            <input type="number" id="order-form-frame-price" min="0">
+          </div>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="order-form-frame-client">
+          <label for="order-form-frame-client">Оправа клиента</label>
+        </div>
+
+        <h3 style="font-size:18px;margin:16px 0 10px;">Линзы для очков</h3>
+        <div class="field-grid">
+          <div>
+            <label>Назначение линз</label>
+            <select id="order-form-lens-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
+          </div>
+          <div>
+            <label>Название линз</label>
+            <input type="text" id="order-form-lens-name">
+          </div>
+          <div>
+            <label>Цена за 1 шт</label>
+            <input type="number" id="order-form-lens-price" min="0">
+          </div>
+          <div>
+            <label>Скидка, %</label>
+            <input type="number" id="order-form-lens-discount" min="0" max="100" value="0">
+          </div>
+          <div>
+            <label>Количество</label>
+            <input type="number" id="order-form-lens-qty" min="1" value="2">
+          </div>
+        </div>
+      </div>
+
+      <div id="cl-fields" style="display:none;">
+        <h3 style="font-size:18px;margin:16px 0 10px;">Контактные линзы</h3>
+        <div class="field-grid">
+          <div>
+            <label>Название</label>
+            <input type="text" id="order-form-cl-name">
+          </div>
+          <div>
+            <label>BC</label>
+            <input type="number" step="0.1" id="order-form-cl-bc">
+          </div>
+          <div>
+            <label>Диоптрии</label>
+            <input type="text" id="order-form-cl-diopters">
+          </div>
+          <div>
+            <label>Срок замены</label>
+            <input type="text" id="order-form-cl-period" placeholder="напр. 1 месяц">
+          </div>
+          <div>
+            <label>Цена за 1 шт</label>
+            <input type="number" id="order-form-cl-price" min="0">
+          </div>
+          <div>
+            <label>Количество</label>
+            <input type="number" id="order-form-cl-qty" min="1" value="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="field-grid" style="margin-top:16px;">
+        <div>
+          <label>Предоплата</label>
+          <input type="number" id="order-form-prepayment" min="0" value="0">
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="order-form-installment" onchange="toggleInstallmentFields(this.checked)">
+        <label for="order-form-installment">Рассрочка</label>
+      </div>
+
+      <div id="installment-fields" style="display:none;background:var(--section-bg);border-radius:14px;padding:16px;margin-bottom:16px;">
+        <div id="installment-list" style="margin-bottom:12px;"></div>
+        <div class="field-grid" style="margin-bottom:8px;">
+          <div><label>Дата платежа</label><input type="date" id="installment-date"></div>
+          <div><label>Сумма</label><input type="number" id="installment-amount" min="0"></div>
+          <div>
+            <label>Способ оплаты</label>
+            <select id="installment-type" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;">
+              <option value="картой">картой</option>
+              <option value="налом">налом</option>
+              <option value="чек">чек</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" onclick="addInstallment()">+ Добавить платёж</button>
+      </div>
+
+      <label>Комментарий</label>
+      <textarea id="order-form-comment" rows="2" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('order-modal')">Отмена</button>
+        <button type="submit" class="btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/patients.js"></script>
+<script src="js/prescriptions.js"></script>
+<script src="js/orders.js"></script>
+<script>
+  requireAuth();
+  const user = getCurrentUser();
+  document.getElementById('current-user-name').textContent = user.name;
+
+  // Заполняем все select'ы с назначениями
+  document.querySelectorAll('#rx-form-purpose, #order-form-purpose, #order-form-frame-purpose, #order-form-lens-purpose')
+    .forEach(el => el.innerHTML = purposeOptions());
+
+  loadPatients();
+</script>
+</body>
+</html>
