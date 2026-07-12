@@ -7,19 +7,19 @@ async function renderPrescriptionsTab() {
     .eq('patient_id', activePatientId)
     .order('created_at', { ascending: false });
 
-  if (error) { toast('Ошибка загрузки рецептов', true); return; }
+  if (error) { toast('Greška pri učitavanju recepata', true); return; }
   currentPrescriptions = data;
 
   const html = `
-    <button class="btn-primary" style="margin-bottom:20px;" onclick="openAddPrescriptionModal()">+ Добавить рецепт</button>
+    <button class="btn-primary" style="margin-bottom:20px;" onclick="openAddPrescriptionModal()">+ Dodaj recept</button>
     ${currentPrescriptions.map(rx => `
       <div class="list-card">
         <div class="list-card-header">
-          <div class="title">${rx.purpose}${rx.is_client_rx ? ' <span class="badge">рецепт клиента</span>' : ''}</div>
+          <div class="title">${rx.purpose}${rx.is_client_rx ? ' <span class="badge">klijentov recept</span>' : ''}</div>
           <div class="actions">
             <span style="color:var(--text-light);font-size:14px;">${fmtDate(rx.created_at?.slice(0,10))}</span>
-            <button class="btn-secondary" onclick="openEditPrescriptionModal('${rx.id}')">Изм.</button>
-            <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Удал.</button>
+            <button class="btn-secondary" onclick="openEditPrescriptionModal('${rx.id}')">Izm.</button>
+            <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Obr.</button>
           </div>
         </div>
         <div class="rx-row">
@@ -30,14 +30,14 @@ async function renderPrescriptionsTab() {
           <span><b>PD</b> ${rx.pd ?? '—'}</span>
         </div>
       </div>
-    `).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Рецептов пока нет</div>'}
+    `).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Još nema recepata</div>'}
   `;
 
   document.getElementById('tab-content').innerHTML = html;
 }
 
 function openAddPrescriptionModal() {
-  document.getElementById('rx-modal-title').textContent = 'Новый рецепт';
+  document.getElementById('rx-modal-title').textContent = 'Novi recept';
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
   openModal('rx-modal');
@@ -45,7 +45,7 @@ function openAddPrescriptionModal() {
 
 function openEditPrescriptionModal(id) {
   const rx = currentPrescriptions.find(r => r.id === id);
-  document.getElementById('rx-modal-title').textContent = 'Редактировать рецепт';
+  document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
   document.getElementById('rx-form-purpose').value = rx.purpose;
   document.getElementById('rx-form-client').checked = rx.is_client_rx;
@@ -72,16 +72,16 @@ async function savePrescriptionForm(e) {
     ({ error } = await sb.from('prescriptions').insert(payload));
   }
 
-  if (error) { toast('Ошибка сохранения рецепта', true); return; }
+  if (error) { toast('Greška pri čuvanju recepta', true); return; }
   closeModal('rx-modal');
-  toast('Рецепт сохранён');
+  toast('Recept sačuvan');
   await renderPrescriptionsTab();
 }
 
 async function deletePrescription(id) {
-  if (!confirm('Удалить рецепт?')) return;
+  if (!confirm('Obrisati recept?')) return;
   const { error } = await sb.from('prescriptions').delete().eq('id', id);
-  if (error) { toast('Ошибка удаления', true); return; }
-  toast('Рецепт удалён');
+  if (error) { toast('Greška pri brisanju', true); return; }
+  toast('Recept obrisan');
   await renderPrescriptionsTab();
 }
