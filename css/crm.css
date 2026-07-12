@@ -1,0 +1,96 @@
+.app { display: flex; height: 100vh; }
+
+.sidebar {
+  width: 340px;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-header h1 { font-size: 20px; color: var(--accent); margin-bottom: 12px; }
+.sidebar-header input { margin-bottom: 12px; }
+
+.patient-list { flex: 1; overflow-y: auto; }
+.patient-item {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.patient-item:hover { background: var(--section-bg); }
+.patient-item.active { background: var(--section-bg); border-left: 4px solid var(--accent); }
+.patient-item .name { font-weight: 600; font-size: 19px; }
+.patient-item .meta { font-size: 15px; color: var(--text-light); margin-top: 4px; }
+
+.topbar {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.topbar .user { color: var(--text-light); font-size: 16px; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.content { flex: 1; overflow-y: auto; padding: 28px; }
+
+.empty-state { display:flex; align-items:center; justify-content:center; height:100%; color: var(--text-light); font-size: 20px; }
+
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.card-header h2 { font-size: 28px; }
+.card-header .badges { display: flex; gap: 8px; margin-top: 8px; }
+.badge { background: var(--section-bg); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+.tab { padding: 12px 20px; cursor: pointer; font-weight: 600; color: var(--text-light); border-bottom: 3px solid transparent; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.field-grid label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 6px; font-weight: 600; }
+
+.rx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.rx-grid .eye-label { grid-column: 1 / -1; font-weight: 700; color: var(--accent); margin-top: 8px; }
+
+.list-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.list-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.list-card-header .title { font-weight: 700; font-size: 18px; }
+.list-card-header .actions { display: flex; gap: 8px; }
+.list-card-header .actions button { padding: 8px 14px; font-size: 15px; }
+
+.rx-row, .kv-row { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 16px; color: var(--text); }
+.rx-row span b, .kv-row span b { color: var(--text-light); font-weight: 600; margin-right: 4px; }
+
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  align-items: center; justify-content: center; z-index: 100;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--white); border-radius: 18px; padding: 32px;
+  width: 640px; max-height: 88vh; overflow-y: auto;
+}
+.modal h3 { font-size: 22px; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+
+.checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.checkbox-row input { width: auto; }
+.checkbox-row label { font-size: 17px; font-weight: 600; }
+
+.type-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+.type-toggle button { flex: 1; padding: 14px; background: var(--section-bg); color: var(--text); }
+.type-toggle button.active { background: var(--accent); color: var(--white); }
+
+.total-box { background: var(--section-bg); border-radius: var(--radius); padding: 16px 20px; margin-top: 16px; font-size: 18px; }
+.total-box .row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.total-box .row.final { font-weight: 700; font-size: 20px; color: var(--accent); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
+
+.deleted-badge { color: var(--danger); font-size: 14px; font-weight: 600; }
