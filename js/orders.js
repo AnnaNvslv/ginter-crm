@@ -9,12 +9,12 @@ async function renderOrdersTab() {
     .is('deleted_at', null)
     .order('order_date', { ascending: false });
 
-  if (error) { toast('Ошибка загрузки заказов', true); return; }
+  if (error) { toast('Greška pri učitavanju porudžbina', true); return; }
   currentOrders = data;
 
   const html = `
-    <button class="btn-primary" style="margin-bottom:20px;" onclick="openAddOrderModal()">+ Новый заказ</button>
-    ${currentOrders.map(o => renderOrderCard(o)).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Заказов пока нет</div>'}
+    <button class="btn-primary" style="margin-bottom:20px;" onclick="openAddOrderModal()">+ Nova porudžbina</button>
+    ${currentOrders.map(o => renderOrderCard(o)).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Još nema porudžbina</div>'}
   `;
   document.getElementById('tab-content').innerHTML = html;
 }
@@ -29,33 +29,33 @@ function renderOrderCard(o) {
   return `
     <div class="list-card">
       <div class="list-card-header">
-        <div class="title">${isGlasses ? '👓 Очки' : '👁 Контактные линзы'} — ${o.purpose || ''} ${o.envelope_number ? `<span class="badge">№ ${o.envelope_number}</span>` : ''}</div>
+        <div class="title">${isGlasses ? '👓 Naočare' : '👁 Kontaktna sočiva'} — ${o.purpose || ''} ${o.envelope_number ? `<span class="badge">br. ${o.envelope_number}</span>` : ''}</div>
         <div class="actions">
           <span style="color:var(--text-light);font-size:14px;">${fmtDate(o.order_date)}</span>
-          <button class="btn-secondary" onclick="openEditOrderModal('${o.id}')">Изм.</button>
-          <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deleteOrder('${o.id}')">Удал.</button>
+          <button class="btn-secondary" onclick="openEditOrderModal('${o.id}')">Izm.</button>
+          <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deleteOrder('${o.id}')">Obr.</button>
         </div>
       </div>
       ${isGlasses ? `
         <div class="kv-row">
-          <span><b>Оправа:</b> ${o.frame_purpose || '—'} ${o.frame_is_client ? '(клиента)' : `— ${fmtMoney(o.frame_price)}`}</span>
-          <span><b>Линзы:</b> ${o.lens_name || o.lens_purpose || '—'} × ${o.lens_qty} — ${fmtMoney(lensTotal(o.lens_price_unit, o.lens_discount, o.lens_qty))}</span>
+          <span><b>Okvir:</b> ${o.frame_purpose || '—'} ${o.frame_is_client ? '(klijentov)' : `— ${fmtMoney(o.frame_price)}`}</span>
+          <span><b>Sočiva:</b> ${o.lens_name || o.lens_purpose || '—'} × ${o.lens_qty} — ${fmtMoney(lensTotal(o.lens_price_unit, o.lens_discount, o.lens_qty))}</span>
         </div>
       ` : `
         <div class="kv-row">
-          <span><b>Линзы:</b> ${o.cl_name || '—'}</span>
+          <span><b>Sočiva:</b> ${o.cl_name || '—'}</span>
           <span><b>BC:</b> ${o.cl_bc ?? '—'}</span>
-          <span><b>Диоптрии:</b> ${o.cl_diopters || '—'}</span>
-          <span><b>Замена:</b> ${o.cl_replacement_period || '—'}</span>
-          <span><b>Кол-во:</b> ${o.cl_qty}</span>
+          <span><b>Dioptrija:</b> ${o.cl_diopters || '—'}</span>
+          <span><b>Zamena:</b> ${o.cl_replacement_period || '—'}</span>
+          <span><b>Kol.:</b> ${o.cl_qty}</span>
         </div>
       `}
       <div class="total-box">
-        <div class="row"><span>Сумма</span><span>${fmtMoney(total)}</span></div>
-        <div class="row"><span>Предоплата</span><span>${fmtMoney(o.prepayment)}</span></div>
-        <div class="row final"><span>Доплата</span><span>${fmtMoney(surcharge)}</span></div>
+        <div class="row"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
+        <div class="row"><span>Avans</span><span>${fmtMoney(o.prepayment)}</span></div>
+        <div class="row final"><span>Doplata</span><span>${fmtMoney(surcharge)}</span></div>
       </div>
-      ${o.has_installment ? `<div style="margin-top:10px;"><span class="badge">Рассрочка</span></div>` : ''}
+      ${o.has_installment ? `<div style="margin-top:10px;"><span class="badge">Na rate</span></div>` : ''}
       ${o.comment ? `<div style="margin-top:10px;color:var(--text-light);">${o.comment}</div>` : ''}
     </div>
   `;
@@ -69,7 +69,7 @@ function setOrderType(type) {
 }
 
 async function openAddOrderModal() {
-  document.getElementById('order-modal-title').textContent = 'Новый заказ';
+  document.getElementById('order-modal-title').textContent = 'Nova porudžbina';
   document.getElementById('order-form').reset();
   document.getElementById('order-form-id').value = '';
   document.getElementById('order-form-date').value = todayISO();
@@ -82,13 +82,13 @@ async function openAddOrderModal() {
 async function populatePrescriptionSelect() {
   const { data } = await sb.from('prescriptions').select('id, purpose, created_at').eq('patient_id', activePatientId).order('created_at', { ascending: false });
   const select = document.getElementById('order-form-prescription');
-  select.innerHTML = '<option value="">— без привязки —</option>' +
+  select.innerHTML = '<option value="">— bez povezivanja —</option>' +
     (data || []).map(rx => `<option value="${rx.id}">${rx.purpose} (${fmtDate(rx.created_at?.slice(0,10))})</option>`).join('');
 }
 
 async function openEditOrderModal(id) {
   const o = currentOrders.find(x => x.id === id);
-  document.getElementById('order-modal-title').textContent = 'Редактировать заказ';
+  document.getElementById('order-modal-title').textContent = 'Izmena porudžbine';
   document.getElementById('order-form-id').value = o.id;
   document.getElementById('order-form-date').value = o.order_date || todayISO();
   document.getElementById('order-form-envelope').value = o.envelope_number || '';
@@ -130,19 +130,19 @@ function toggleInstallmentFields(show) {
 
 async function loadInstallments() {
   const id = document.getElementById('order-form-id').value;
-  if (!id) { document.getElementById('installment-list').innerHTML = '<div style="color:var(--text-light);font-size:14px;">Сохраните заказ, чтобы добавлять платежи</div>'; return; }
+  if (!id) { document.getElementById('installment-list').innerHTML = '<div style="color:var(--text-light);font-size:14px;">Sačuvajte porudžbinu da biste dodali uplate</div>'; return; }
   const { data } = await sb.from('installments').select('*').eq('order_id', id).order('payment_date');
   document.getElementById('installment-list').innerHTML = (data || []).map(p => `
     <div class="kv-row" style="margin-bottom:6px;">
       <span>${fmtDate(p.payment_date)}</span><span>${fmtMoney(p.amount)}</span><span>${p.payment_type || ''}</span>
       <button class="btn-secondary" style="padding:4px 10px;font-size:13px;" onclick="deleteInstallment('${p.id}')">×</button>
     </div>
-  `).join('') || '<div style="color:var(--text-light);font-size:14px;">Платежей пока нет</div>';
+  `).join('') || '<div style="color:var(--text-light);font-size:14px;">Još nema uplata</div>';
 }
 
 async function addInstallment() {
   const orderId = document.getElementById('order-form-id').value;
-  if (!orderId) { toast('Сначала сохраните заказ', true); return; }
+  if (!orderId) { toast('Prvo sačuvajte porudžbinu', true); return; }
   const payload = {
     order_id: orderId,
     payment_date: document.getElementById('installment-date').value || todayISO(),
@@ -150,7 +150,7 @@ async function addInstallment() {
     payment_type: document.getElementById('installment-type').value,
   };
   const { error } = await sb.from('installments').insert(payload);
-  if (error) { toast('Ошибка добавления платежа', true); return; }
+  if (error) { toast('Greška pri dodavanju uplate', true); return; }
   document.getElementById('installment-amount').value = '';
   await loadInstallments();
 }
@@ -205,10 +205,10 @@ async function saveOrderForm(e) {
     savedId = res.data?.id;
   }
 
-  if (error) { toast('Ошибка сохранения заказа', true); return; }
+  if (error) { toast('Greška pri čuvanju porudžbine', true); return; }
 
   document.getElementById('order-form-id').value = savedId;
-  toast('Заказ сохранён');
+  toast('Porudžbina sačuvana');
 
   if (payload.has_installment) {
     await loadInstallments();
@@ -219,9 +219,9 @@ async function saveOrderForm(e) {
 }
 
 async function deleteOrder(id) {
-  if (!confirm('Удалить заказ?')) return;
+  if (!confirm('Obrisati porudžbinu?')) return;
   const { error } = await sb.from('orders').update({ deleted_at: new Date().toISOString() }).eq('id', id);
-  if (error) { toast('Ошибка удаления', true); return; }
-  toast('Заказ удалён');
+  if (error) { toast('Greška pri brisanju', true); return; }
+  toast('Porudžbina obrisana');
   await renderOrdersTab();
 }
