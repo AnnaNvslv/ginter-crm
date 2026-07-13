@@ -39,9 +39,13 @@
     <form id="patient-form" onsubmit="savePatientForm(event)">
       <input type="hidden" id="patient-form-id">
       <div class="field-grid">
-        <div style="grid-column:1/-1;">
-          <label>Ime i prezime *</label>
-          <input type="text" id="patient-form-name" required>
+        <div>
+          <label>Ime</label>
+          <input type="text" id="patient-form-first-name">
+        </div>
+        <div>
+          <label>Prezime</label>
+          <input type="text" id="patient-form-last-name">
         </div>
         <div>
           <label>Godine</label>
@@ -76,27 +80,26 @@
     <h3 id="rx-modal-title">Novi recept</h3>
     <form id="rx-form" onsubmit="savePrescriptionForm(event)">
       <input type="hidden" id="rx-form-id">
-      <label>Namena *</label>
-      <select id="rx-form-purpose" required style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;">
-      </select>
+      <label>Namena</label>
+      <input type="text" id="rx-form-purpose" placeholder="npr. za daljinu" style="width:100%;margin-bottom:16px;">
 
       <div class="rx-grid">
         <div class="eye-label">OD (desno oko)</div>
-        <div><label>Sph</label><input type="number" step="0.25" id="rx-form-od_sph"></div>
-        <div><label>Cyl</label><input type="number" step="0.25" id="rx-form-od_cyl"></div>
-        <div><label>Ax</label><input type="number" id="rx-form-od_ax"></div>
+        <div><label>Sph</label><input type="text" id="rx-form-od_sph" placeholder="npr. +2,5"></div>
+        <div><label>Cyl</label><input type="text" id="rx-form-od_cyl"></div>
+        <div><label>Ax</label><input type="text" id="rx-form-od_ax"></div>
         <div></div>
 
         <div class="eye-label">OS (levo oko)</div>
-        <div><label>Sph</label><input type="number" step="0.25" id="rx-form-os_sph"></div>
-        <div><label>Cyl</label><input type="number" step="0.25" id="rx-form-os_cyl"></div>
-        <div><label>Ax</label><input type="number" id="rx-form-os_ax"></div>
+        <div><label>Sph</label><input type="text" id="rx-form-os_sph"></div>
+        <div><label>Cyl</label><input type="text" id="rx-form-os_cyl"></div>
+        <div><label>Ax</label><input type="text" id="rx-form-os_ax"></div>
         <div></div>
 
         <div class="eye-label">Opšte</div>
-        <div><label>Add</label><input type="number" step="0.25" id="rx-form-add"></div>
-        <div><label>Degr</label><input type="number" step="0.25" id="rx-form-degr"></div>
-        <div><label>PD</label><input type="number" step="0.5" id="rx-form-pd"></div>
+        <div><label>Add</label><input type="text" id="rx-form-add"></div>
+        <div><label>Degr</label><input type="text" id="rx-form-degr"></div>
+        <div><label>PD</label><input type="text" id="rx-form-pd"></div>
         <div></div>
       </div>
 
@@ -134,60 +137,24 @@
           <label>Broj porudžbine (sa koverte)</label>
           <input type="text" id="order-form-envelope">
         </div>
-        <div>
-          <label>Namena porudžbine</label>
-          <select id="order-form-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
-        </div>
-        <div>
+        <div style="grid-column:1/-1;">
           <label>Povezati recept</label>
           <select id="order-form-prescription" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
         </div>
       </div>
 
       <div id="glasses-fields">
-        <h3 style="font-size:18px;margin:16px 0 10px;">Okvir</h3>
-        <div class="field-grid">
-          <div>
-            <label>Namena okvira</label>
-            <select id="order-form-frame-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
-          </div>
-          <div>
-            <label>Cena okvira</label>
-            <input type="number" id="order-form-frame-price" min="0">
-          </div>
-        </div>
-        <div class="checkbox-row">
-          <input type="checkbox" id="order-form-frame-client">
-          <label for="order-form-frame-client">Klijentov okvir</label>
-        </div>
+        <div class="section-heading">Okviri</div>
+        <div id="frames-container"></div>
+        <button type="button" class="btn-secondary" onclick="addFrameRow()" style="margin-bottom:20px;">+ Dodaj okvir</button>
 
-        <h3 style="font-size:18px;margin:16px 0 10px;">Sočiva za naočare</h3>
-        <div class="field-grid">
-          <div>
-            <label>Namena sočiva</label>
-            <select id="order-form-lens-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
-          </div>
-          <div>
-            <label>Naziv sočiva</label>
-            <input type="text" id="order-form-lens-name">
-          </div>
-          <div>
-            <label>Cena po komadu</label>
-            <input type="number" id="order-form-lens-price" min="0">
-          </div>
-          <div>
-            <label>Popust, %</label>
-            <input type="number" id="order-form-lens-discount" min="0" max="100" value="0">
-          </div>
-          <div>
-            <label>Količina</label>
-            <input type="number" id="order-form-lens-qty" min="1" value="2">
-          </div>
-        </div>
+        <div class="section-heading">Stakla</div>
+        <div id="lens-container"></div>
+        <button type="button" class="btn-secondary" onclick="addLensRow()" style="margin-bottom:20px;">+ Dodaj stakla</button>
       </div>
 
       <div id="cl-fields" style="display:none;">
-        <h3 style="font-size:18px;margin:16px 0 10px;">Kontaktna sočiva</h3>
+        <div class="section-heading">Kontaktna sočiva</div>
         <div class="field-grid">
           <div>
             <label>Naziv</label>
@@ -195,7 +162,7 @@
           </div>
           <div>
             <label>BC</label>
-            <input type="number" step="0.1" id="order-form-cl-bc">
+            <input type="text" id="order-form-cl-bc">
           </div>
           <div>
             <label>Dioptrija</label>
@@ -207,16 +174,20 @@
           </div>
           <div>
             <label>Cena po komadu</label>
-            <input type="number" id="order-form-cl-price" min="0">
+            <input type="number" id="order-form-cl-price" min="0" oninput="updateOrderFormTotal()">
           </div>
           <div>
             <label>Količina</label>
-            <input type="number" id="order-form-cl-qty" min="1" value="1">
+            <input type="number" id="order-form-cl-qty" min="1" value="1" oninput="updateOrderFormTotal()">
           </div>
         </div>
       </div>
 
-      <div class="field-grid" style="margin-top:16px;">
+      <div class="total-box" style="margin-bottom:20px;">
+        <div class="row final"><span>Ukupno</span><span id="order-form-total-preview">0 RSD</span></div>
+      </div>
+
+      <div class="field-grid">
         <div>
           <label>Avans</label>
           <input type="number" id="order-form-prepayment" min="0" value="0">
@@ -267,9 +238,6 @@
   requireAuth();
   const user = getCurrentUser();
   document.getElementById('current-user-name').textContent = user.name;
-
-  document.querySelectorAll('#rx-form-purpose, #order-form-purpose, #order-form-frame-purpose, #order-form-lens-purpose')
-    .forEach(el => el.innerHTML = purposeOptions());
 
   loadPatients();
 </script>
