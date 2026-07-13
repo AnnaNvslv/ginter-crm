@@ -11,9 +11,23 @@
   - Привязка к рецепту, предоплата, доплата (расч.), рассрочка с историей платежей (installments)
 - Стек: vanilla JS, Supabase (project `flxewreibnkyfoccfjtg`), GitHub Pages
 
+## 2026-07-13
+Интерфейс переведён на сербский (латиница). Существенный редизайн по фидбэку:
+- `patients`: имя разделено на `first_name` / `last_name` (было единое поле `name`)
+- Рецепты: назначение и все поля (sph/cyl/ax/add/degr/pd) — свободный текст без валидации (можно `+2,5`, `-0.5` и т.п.), колонки в БД переведены в `text`
+- Вкладка Рецепты теперь первая (была Info); порядок: Recepti → Porudžbine → Info
+- Заказы полностью переработаны:
+  - Окна (Okviri) и стёкла (Stakla) вынесены в отдельные таблицы `order_frames` / `order_lenses` — можно добавить несколько окон и несколько стёкол в один заказ (кнопки "+ Dodaj okvir" / "+ Dodaj stakla")
+  - У каждого окна: назначение (пресет), šifra okvira (4 цифры), цена, галочка "klijentov"
+  - У каждого стекла: назначение (пресет), название (широкое поле), цена/шт, скидка %, количество
+  - Терминология: Stakla = линзы для очков, Sočiva = контактные линзы (раздел заказа с типом "Kontaktna sočiva" не меняется)
+  - Живой предпросчёт суммы в форме заказа
+  - В списке заказов при рассрочке — видно "Ostalo za uplatu" и кнопка "+ Dodaj uplatu" прямо в карточке (без открытия формы редактирования)
+- Колонки `orders.frame_*`, `orders.lens_*`, `orders.purpose` удалены (перенесено в `order_frames`/`order_lenses`)
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
-- Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `installments` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
+- Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
 - Рассмотреть хеширование паролей вместо plain text
 
 ## TODO (функционал)
