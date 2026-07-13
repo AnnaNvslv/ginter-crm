@@ -54,6 +54,16 @@
 .rx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .rx-grid .eye-label { grid-column: 1 / -1; font-weight: 700; color: var(--accent); margin-top: 8px; }
 
+.section-heading {
+  background: var(--section-bg);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 17px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
 .list-card {
   background: var(--white);
   border: 1px solid var(--border);
