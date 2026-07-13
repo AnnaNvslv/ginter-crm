@@ -15,20 +15,16 @@ async function renderPrescriptionsTab() {
     ${currentPrescriptions.map(rx => `
       <div class="list-card">
         <div class="list-card-header">
-          <div class="title">${rx.purpose}${rx.is_client_rx ? ' <span class="badge">klijentov recept</span>' : ''}</div>
+          <div class="title">${rx.purpose || '—'}${rx.is_client_rx ? ' <span class="badge">klijentov recept</span>' : ''}</div>
           <div class="actions">
             <span style="color:var(--text-light);font-size:14px;">${fmtDate(rx.created_at?.slice(0,10))}</span>
             <button class="btn-secondary" onclick="openEditPrescriptionModal('${rx.id}')">Izm.</button>
             <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Obr.</button>
           </div>
         </div>
-        <div class="rx-row">
-          <span><b>OD</b> sph ${rx.od_sph ?? '—'} cyl ${rx.od_cyl ?? '—'} ax ${rx.od_ax ?? '—'}</span>
-          <span><b>OS</b> sph ${rx.os_sph ?? '—'} cyl ${rx.os_cyl ?? '—'} ax ${rx.os_ax ?? '—'}</span>
-          <span><b>Add</b> ${rx.add ?? '—'}</span>
-          <span><b>Degr</b> ${rx.degr ?? '—'}</span>
-          <span><b>PD</b> ${rx.pd ?? '—'}</span>
-        </div>
+        <div class="kv-row"><span><b>OD</b> sph ${rx.od_sph || '—'} cyl ${rx.od_cyl || '—'} ax ${rx.od_ax || '—'}</span></div>
+        <div class="kv-row"><span><b>OS</b> sph ${rx.os_sph || '—'} cyl ${rx.os_cyl || '—'} ax ${rx.os_ax || '—'}</span></div>
+        <div class="kv-row"><span><b>Add</b> ${rx.add || '—'}</span><span><b>Degr</b> ${rx.degr || '—'}</span><span><b>PD</b> ${rx.pd || '—'}</span></div>
       </div>
     `).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Još nema recepata</div>'}
   `;
@@ -47,7 +43,7 @@ function openEditPrescriptionModal(id) {
   const rx = currentPrescriptions.find(r => r.id === id);
   document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
-  document.getElementById('rx-form-purpose').value = rx.purpose;
+  document.getElementById('rx-form-purpose').value = rx.purpose || '';
   document.getElementById('rx-form-client').checked = rx.is_client_rx;
   ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
     document.getElementById(`rx-form-${f}`).value = rx[f] ?? '';
@@ -58,11 +54,14 @@ function openEditPrescriptionModal(id) {
 async function savePrescriptionForm(e) {
   e.preventDefault();
   const id = document.getElementById('rx-form-id').value;
-  const payload = { patient_id: activePatientId, purpose: document.getElementById('rx-form-purpose').value,
-    is_client_rx: document.getElementById('rx-form-client').checked };
+  const payload = {
+    patient_id: activePatientId,
+    purpose: document.getElementById('rx-form-purpose').value.trim() || null,
+    is_client_rx: document.getElementById('rx-form-client').checked,
+  };
   ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
-    const v = document.getElementById(`rx-form-${f}`).value;
-    payload[f] = v === '' ? null : Number(v);
+    const v = document.getElementById(`rx-form-${f}`).value.trim();
+    payload[f] = v || null;
   });
 
   let error;
