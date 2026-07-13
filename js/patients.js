@@ -1,29 +1,33 @@
 let currentPatients = [];
 let activePatientId = null;
-let activeTab = 'info';
+let activeTab = 'prescriptions';
 
 async function loadPatients() {
   const { data, error } = await sb
     .from('patients')
     .select('*')
     .is('deleted_at', null)
-    .order('name');
+    .order('last_name');
 
   if (error) { toast('Greška pri učitavanju pacijenata', true); return; }
   currentPatients = data;
   renderPatientList();
 }
 
+function fullName(p) {
+  return [p.first_name, p.last_name].filter(Boolean).join(' ');
+}
+
 function renderPatientList(filter = '') {
   const list = document.getElementById('patient-list');
   const f = filter.trim().toLowerCase();
   const filtered = f
-    ? currentPatients.filter(p => p.name.toLowerCase().includes(f) || (p.phone || '').includes(f))
+    ? currentPatients.filter(p => fullName(p).toLowerCase().includes(f) || (p.phone || '').includes(f))
     : currentPatients;
 
   list.innerHTML = filtered.map(p => `
     <div class="patient-item ${p.id === activePatientId ? 'active' : ''}" onclick="openPatient('${p.id}')">
-      <div class="name">${p.name}${p.tkt ? ' <span class="badge">TKT</span>' : ''}</div>
+      <div class="name">${fullName(p)}${p.tkt ? ' <span class="badge">TKT</span>' : ''}</div>
       <div class="meta">${p.phone || 'bez telefona'} · ${fmtDate(p.visit_date)}</div>
     </div>
   `).join('') || '<div class="empty-state" style="height:auto;padding:40px 20px;">Pacijenti nisu pronađeni</div>';
@@ -31,7 +35,7 @@ function renderPatientList(filter = '') {
 
 async function openPatient(id) {
   activePatientId = id;
-  activeTab = 'info';
+  activeTab = 'prescriptions';
   renderPatientList(document.getElementById('search-input').value);
   await renderPatientCard();
 }
@@ -44,7 +48,7 @@ async function renderPatientCard() {
   content.innerHTML = `
     <div class="card-header">
       <div>
-        <h2>${patient.name}</h2>
+        <h2>${fullName(patient)}</h2>
         <div class="badges">
           ${patient.age ? `<span class="badge">${patient.age} god.</span>` : ''}
           ${patient.tkt ? `<span class="badge">TKT</span>` : ''}
@@ -58,9 +62,9 @@ async function renderPatientCard() {
     </div>
 
     <div class="tabs">
-      <div class="tab ${activeTab === 'info' ? 'active' : ''}" onclick="switchTab('info')">Info</div>
-      <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" onclick="switchTab('prescriptions')">Recepti</div>
-      <div class="tab ${activeTab === 'orders' ? 'active' : ''}" onclick="switchTab('orders')">Porudžbine</div>
+      <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" data-tab="prescriptions" onclick="switchTab('prescriptions')">Recepti</div>
+      <div class="tab ${activeTab === 'orders' ? 'active' : ''}" data-tab="orders" onclick="switchTab('orders')">Porudžbine</div>
+      <div class="tab ${activeTab === 'info' ? 'active' : ''}" data-tab="info" onclick="switchTab('info')">Info</div>
     </div>
 
     <div id="tab-content"></div>
@@ -71,8 +75,8 @@ async function renderPatientCard() {
 
 async function switchTab(tab) {
   activeTab = tab;
-  document.querySelectorAll('.tab').forEach((el, i) => {
-    el.classList.toggle('active', ['info', 'prescriptions', 'orders'][i] === tab);
+  document.querySelectorAll('.tab').forEach((el) => {
+    el.classList.toggle('active', el.dataset.tab === tab);
   });
   await renderActiveTab();
 }
@@ -110,7 +114,8 @@ function openEditPatientModal() {
   const patient = currentPatients.find(p => p.id === activePatientId);
   document.getElementById('patient-modal-title').textContent = 'Izmena pacijenta';
   document.getElementById('patient-form-id').value = patient.id;
-  document.getElementById('patient-form-name').value = patient.name;
+  document.getElementById('patient-form-first-name').value = patient.first_name || '';
+  document.getElementById('patient-form-last-name').value = patient.last_name || '';
   document.getElementById('patient-form-age').value = patient.age || '';
   document.getElementById('patient-form-tkt').checked = patient.tkt;
   document.getElementById('patient-form-phone').value = patient.phone || '';
@@ -123,7 +128,8 @@ async function savePatientForm(e) {
   e.preventDefault();
   const id = document.getElementById('patient-form-id').value;
   const payload = {
-    name: document.getElementById('patient-form-name').value.trim(),
+    first_name: document.getElementById('patient-form-first-name').value.trim(),
+    last_name: document.getElementById('patient-form-last-name').value.trim(),
     age: document.getElementById('patient-form-age').value || null,
     tkt: document.getElementById('patient-form-tkt').checked,
     phone: document.getElementById('patient-form-phone').value.trim() || null,
@@ -131,7 +137,7 @@ async function savePatientForm(e) {
     notes: document.getElementById('patient-form-notes').value.trim() || null,
   };
 
-  if (!payload.name) { toast('Unesite ime pacijenta', true); return; }
+  if (!payload.first_name && !payload.last_name) { toast('Unesite ime ili prezime pacijenta', true); return; }
 
   let error;
   if (id) {
