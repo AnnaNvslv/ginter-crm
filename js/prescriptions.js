@@ -22,9 +22,22 @@ async function renderPrescriptionsTab() {
             <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Obr.</button>
           </div>
         </div>
-        <div class="kv-row"><span><b>OD</b> sph ${rx.od_sph || '—'} cyl ${rx.od_cyl || '—'} ax ${rx.od_ax || '—'}</span></div>
-        <div class="kv-row"><span><b>OS</b> sph ${rx.os_sph || '—'} cyl ${rx.os_cyl || '—'} ax ${rx.os_ax || '—'}</span></div>
-        <div class="kv-row"><span><b>Add</b> ${rx.add || '—'}</span><span><b>Degr</b> ${rx.degr || '—'}</span><span><b>PD</b> ${rx.pd || '—'}</span></div>
+        <table class="rx-table">
+          <thead>
+            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Add</th><th>Degr</th><th>PD</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>OD</td><td>${rx.od_sph || '—'}</td><td>${rx.od_cyl || '—'}</td><td>${rx.od_ax || '—'}</td>
+              <td rowspan="2" style="vertical-align:middle;">${rx.add || '—'}</td>
+              <td rowspan="2" style="vertical-align:middle;">${rx.degr || '—'}</td>
+              <td rowspan="2" style="vertical-align:middle;">${rx.pd || '—'}</td>
+            </tr>
+            <tr>
+              <td>OS</td><td>${rx.os_sph || '—'}</td><td>${rx.os_cyl || '—'}</td><td>${rx.os_ax || '—'}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     `).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Još nema recepata</div>'}
   `;
@@ -83,4 +96,77 @@ async function deletePrescription(id) {
   if (error) { toast('Greška pri brisanju', true); return; }
   toast('Recept obrisan');
   await renderPrescriptionsTab();
+}
+
+let examsLoaded = false;
+let examsSectionOffset = 0;
+const EXAMS_PAGE = 50;
+let examsSectionRows = [];
+
+const debouncedExamsSearch = debounce(() => loadExamsSection(true));
+
+function clearExamsFilters() {
+  document.getElementById('exams-search-name').value = '';
+  document.getElementById('exams-search-date').value = '';
+  loadExamsSection(true);
+}
+
+async function loadExamsSection(reset = false) {
+  examsLoaded = true;
+  if (reset) { examsSectionOffset = 0; examsSectionRows = []; }
+
+  const nameFilter = document.getElementById('exams-search-name').value.trim();
+  const dateFilter = document.getElementById('exams-search-date').value;
+
+  let patientIds = null;
+  if (nameFilter) {
+    const { data: pts } = await sb.from('patients').select('id')
+      .or(`first_name.ilike.%${nameFilter}%,last_name.ilike.%${nameFilter}%`).limit(200);
+    patientIds = (pts || []).map(p => p.id);
+    if (!patientIds.length) { examsSectionRows = []; renderExamsSectionTable(false); return; }
+  }
+
+  let query = sb.from('prescriptions').select('*')
+    .order('created_at', { ascending: false })
+    .range(examsSectionOffset, examsSectionOffset + EXAMS_PAGE - 1);
+  if (patientIds) query = query.in('patient_id', patientIds);
+  if (dateFilter) query = query.gte('created_at', dateFilter + 'T00:00:00').lte('created_at', dateFilter + 'T23:59:59');
+
+  const { data, error } = await query;
+  if (error) { toast('Greška pri učitavanju pregleda', true); return; }
+
+  const idsToFetch = [...new Set((data || []).map(r => r.patient_id))];
+  let patientsMap = {};
+  if (idsToFetch.length) {
+    const { data: pts } = await sb.from('patients').select('id, first_name, last_name').in('id', idsToFetch);
+    (pts || []).forEach(p => { patientsMap[p.id] = p; });
+  }
+
+  const enriched = (data || []).map(r => ({ rx: r, patient: patientsMap[r.patient_id] || null }));
+  examsSectionRows = reset ? enriched : [...examsSectionRows, ...enriched];
+  examsSectionOffset += (data || []).length;
+  renderExamsSectionTable(data && data.length === EXAMS_PAGE);
+}
+
+function renderExamsSectionTable(hasMore = false) {
+  const wrap = document.getElementById('exams-table-wrap');
+  if (!examsSectionRows.length) { wrap.innerHTML = '<div class="empty-state" style="height:auto;padding:40px;">Nema pregleda</div>'; return; }
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Datum</th><th>Pacijent</th><th>Namena</th><th class="num">OD sph/cyl/ax</th><th class="num">OS sph/cyl/ax</th><th class="num">PD</th></tr></thead>
+      <tbody>
+        ${examsSectionRows.map(({ rx, patient: p }) => `
+          <tr onclick="goToPatient('${rx.patient_id}','prescriptions')">
+            <td>${fmtDate(rx.created_at?.slice(0,10))}</td>
+            <td class="link">${p ? fullName(p) : '—'}</td>
+            <td>${rx.purpose || '—'}</td>
+            <td class="num">${rx.od_sph || '—'} / ${rx.od_cyl || '—'} / ${rx.od_ax || '—'}</td>
+            <td class="num">${rx.os_sph || '—'} / ${rx.os_cyl || '—'} / ${rx.os_ax || '—'}</td>
+            <td class="num">${rx.pd || '—'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    ${hasMore ? `<button class="btn-secondary load-more" onclick="loadExamsSection(false)">Učitaj još</button>` : ''}
+  `;
 }
