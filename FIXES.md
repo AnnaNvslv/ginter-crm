@@ -25,6 +25,17 @@
   - В списке заказов при рассрочке — видно "Ostalo za uplatu" и кнопка "+ Dodaj uplatu" прямо в карточке (без открытия формы редактирования)
 - Колонки `orders.frame_*`, `orders.lens_*`, `orders.purpose` удалены (перенесено в `order_frames`/`order_lenses`)
 
+## 2026-07-15
+Крупная переработка навигации под рост базы (6 лет пациентов):
+- Верхняя навигация с 4 разделами: **Klijenti / Porudžbine / Pregledi / Dugovanja** (новый файл `js/nav.js`, функция `switchSection()`)
+- **Klijenti**: список пациентов теперь сгруппирован по первой букве фамилии (`last_name`) с буквенным индексом слева для быстрого перехода (`scrollToLetter()`), у каждой буквы — счётчик пациентов. Строка списка: аватар-инициалы, имя, телефон, дата последней посете справа, бейдж "dug" если есть непогашенная рассрочка
+- **Porudžbine** (новый раздел) — таблица всех заказов по всем пациентам: дата, пациент, тип, номер, сумма, статус. Поиск по имени пациента (через предварительный поиск patient_id) и по дате, пагинация по 50 (`js/orders.js`: `loadOrdersSection`, `renderOrdersSectionTable`)
+- **Pregledi** (новый раздел) — аналогичная таблица по всем рецептам: дата, пациент, назначение, OD/OS sph/cyl/ax, PD. Поиск по имени/дате, пагинация по 50 (`js/prescriptions.js`: `loadExamsSection`, `renderExamsSectionTable`)
+- **Dugovanja** (новый раздел) — таблица должников: заказы с `has_installment=true`, где `remaining = total_amount - prepayment - Σ(installments.amount) > 0`. Столбцы: номер заказа, пациент, дата заказа, сумма, оплачено, остаток, дата последней уплаты (`js/orders.js`: `loadDebtsData`, `renderDebtsTable`). Счётчик должников — бейдж на табе
+- Клик по строке в Porudžbine/Pregledi/Dugovanja → переход к карточке пациента с нужной вкладкой (`goToPatient()` в `js/nav.js`)
+- Recepti в карточке пациента переведены в табличный вид (OD/OS × Sph/Cyl/Ax/Add/Degr/PD) вместо текстовых строк
+- Okviri/Stakla в карточке заказа тоже переведены в табличный вид
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
