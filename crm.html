@@ -12,22 +12,68 @@
 <body>
 
 <div class="app">
-  <div class="sidebar">
-    <div class="sidebar-header">
+  <div class="topnav">
+    <div class="topnav-left">
       <h1>Ginter Optika</h1>
-      <input type="text" id="search-input" placeholder="Pretraga pacijenta..." oninput="renderPatientList(this.value)">
-      <button class="btn-primary" style="width:100%;" onclick="openAddPatientModal()">+ Novi pacijent</button>
+      <div class="nav-tabs">
+        <div class="nav-tab active" data-section="clients" onclick="switchSection('clients')">Klijenti</div>
+        <div class="nav-tab" data-section="orders" onclick="switchSection('orders')">Porudžbine</div>
+        <div class="nav-tab" data-section="exams" onclick="switchSection('exams')">Pregledi</div>
+        <div class="nav-tab" data-section="debts" onclick="switchSection('debts')">Dugovanja<span class="count-badge" id="debts-count" style="display:none;"></span></div>
+      </div>
     </div>
-    <div class="patient-list" id="patient-list"></div>
-  </div>
-
-  <div class="main">
-    <div class="topbar">
-      <div class="user">Prijavljeni ste kao <b id="current-user-name"></b></div>
+    <div class="topnav-user">
+      Prijavljeni ste kao <b id="current-user-name"></b>
       <button class="btn-secondary" onclick="logout()">Odjava</button>
     </div>
-    <div class="content" id="content">
-      <div class="empty-state">Izaberite pacijenta sa leve strane</div>
+  </div>
+
+  <div class="section-body active" id="section-clients">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <input type="text" id="search-input" placeholder="Pretraga pacijenta..." oninput="renderPatientList(this.value)">
+        <button class="btn-primary" style="width:100%;" onclick="openAddPatientModal()">+ Novi pacijent</button>
+      </div>
+      <div class="patient-list-wrap">
+        <div class="letter-index" id="letter-index"></div>
+        <div class="patient-list" id="patient-list"></div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="content" id="content">
+        <div class="empty-state">Izaberite pacijenta sa leve strane</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-body" id="section-orders">
+    <div class="full-view">
+      <div class="filters-row">
+        <input type="text" id="orders-search-name" placeholder="Ime pacijenta..." oninput="debouncedOrdersSearch()">
+        <input type="date" id="orders-search-date" onchange="debouncedOrdersSearch()">
+        <button class="btn-secondary" onclick="clearOrdersFilters()">Poništi filtere</button>
+      </div>
+      <div id="orders-table-wrap"></div>
+    </div>
+  </div>
+
+  <div class="section-body" id="section-exams">
+    <div class="full-view">
+      <div class="filters-row">
+        <input type="text" id="exams-search-name" placeholder="Ime pacijenta..." oninput="debouncedExamsSearch()">
+        <input type="date" id="exams-search-date" onchange="debouncedExamsSearch()">
+        <button class="btn-secondary" onclick="clearExamsFilters()">Poništi filtere</button>
+      </div>
+      <div id="exams-table-wrap"></div>
+    </div>
+  </div>
+
+  <div class="section-body" id="section-debts">
+    <div class="full-view">
+      <div class="filters-row">
+        <input type="text" id="debts-search-name" placeholder="Ime pacijenta..." oninput="renderDebtsTable()">
+      </div>
+      <div id="debts-table-wrap"></div>
     </div>
   </div>
 </div>
@@ -234,12 +280,14 @@
 <script src="js/patients.js"></script>
 <script src="js/prescriptions.js"></script>
 <script src="js/orders.js"></script>
+<script src="js/nav.js"></script>
 <script>
   requireAuth();
   const user = getCurrentUser();
   document.getElementById('current-user-name').textContent = user.name;
 
   loadPatients();
+  initDebtBadge();
 </script>
 </body>
 </html>
