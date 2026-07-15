@@ -18,19 +18,57 @@ function fullName(p) {
   return [p.first_name, p.last_name].filter(Boolean).join(' ');
 }
 
+function initials(p) {
+  return ((p.first_name || '')[0] || '') + ((p.last_name || '')[0] || '');
+}
+
+function sortKey(p) {
+  return (p.last_name || p.first_name || '').trim();
+}
+
+function groupPatients(list) {
+  const groups = {};
+  list.forEach(p => {
+    const key = sortKey(p);
+    const letter = key ? key[0].toUpperCase() : '#';
+    (groups[letter] ??= []).push(p);
+  });
+  return groups;
+}
+
 function renderPatientList(filter = '') {
-  const list = document.getElementById('patient-list');
   const f = filter.trim().toLowerCase();
   const filtered = f
     ? currentPatients.filter(p => fullName(p).toLowerCase().includes(f) || (p.phone || '').includes(f))
     : currentPatients;
 
-  list.innerHTML = filtered.map(p => `
-    <div class="patient-item ${p.id === activePatientId ? 'active' : ''}" onclick="openPatient('${p.id}')">
-      <div class="name">${fullName(p)}${p.tkt ? ' <span class="badge">TKT</span>' : ''}</div>
-      <div class="meta">${p.phone || 'bez telefona'} · ${fmtDate(p.visit_date)}</div>
-    </div>
+  const sorted = [...filtered].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sr'));
+  const groups = groupPatients(sorted);
+  const letters = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'sr'));
+
+  const indexEl = document.getElementById('letter-index');
+  indexEl.innerHTML = letters.map(l => `<a onclick="scrollToLetter('${l}')">${l}</a>`).join('');
+
+  const debtors = (typeof debtorPatientIds !== 'undefined') ? debtorPatientIds : new Set();
+
+  const list = document.getElementById('patient-list');
+  list.innerHTML = letters.map(l => `
+    <div class="letter-group-header" id="letter-${l}">${l} · ${groups[l].length} ${groups[l].length === 1 ? 'pacijent' : 'pacijenta'}</div>
+    ${groups[l].map(p => `
+      <div class="patient-item ${p.id === activePatientId ? 'active' : ''}" onclick="openPatient('${p.id}')">
+        <div class="patient-avatar">${initials(p)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="name">${fullName(p)}${p.tkt ? ' <span class="badge">TKT</span>' : ''}${debtors.has(p.id) ? ' <span class="debt-badge">dug</span>' : ''}</div>
+          <div class="meta">${p.phone || 'bez telefona'}</div>
+        </div>
+        <div class="visit">poslednja poseta<br>${fmtDate(p.visit_date)}</div>
+      </div>
+    `).join('')}
   `).join('') || '<div class="empty-state" style="height:auto;padding:40px 20px;">Pacijenti nisu pronađeni</div>';
+}
+
+function scrollToLetter(l) {
+  document.getElementById(`letter-${l}`)?.scrollIntoView({ block: 'start' });
 }
 
 async function openPatient(id) {
