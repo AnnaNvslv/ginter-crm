@@ -94,6 +94,8 @@ async function renderPatientCard() {
         </div>
       </div>
       <div style="display:flex;gap:10px;">
+        <button class="btn-primary" onclick="quickAddPrescription()">+ Recept</button>
+        <button class="btn-primary" onclick="quickAddOrder()">+ Porudžbina</button>
         <button class="btn-secondary" onclick="openEditPatientModal()">Izmeni</button>
         <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePatient()">Obriši</button>
       </div>
@@ -177,11 +179,13 @@ async function savePatientForm(e) {
 
   if (!payload.first_name && !payload.last_name) { toast('Unesite ime ili prezime pacijenta', true); return; }
 
-  let error;
+  let error, savedId = id;
   if (id) {
     ({ error } = await sb.from('patients').update(payload).eq('id', id));
   } else {
-    ({ error } = await sb.from('patients').insert(payload));
+    const res = await sb.from('patients').insert(payload).select('id').single();
+    error = res.error;
+    savedId = res.data?.id;
   }
 
   if (error) { toast('Greška pri čuvanju', true); return; }
@@ -189,7 +193,24 @@ async function savePatientForm(e) {
   closeModal('patient-modal');
   toast('Sačuvano');
   await loadPatients();
-  if (id) await renderPatientCard();
+
+  if (savedId) {
+    await openPatient(savedId);
+    if (!id) {
+      await switchTab('prescriptions');
+      openAddPrescriptionModal();
+    }
+  }
+}
+
+async function quickAddPrescription() {
+  await switchTab('prescriptions');
+  openAddPrescriptionModal();
+}
+
+async function quickAddOrder() {
+  await switchTab('orders');
+  await openAddOrderModal();
 }
 
 async function deletePatient() {
