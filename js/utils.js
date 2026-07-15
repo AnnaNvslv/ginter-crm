@@ -41,3 +41,11 @@ const PURPOSES = ['za daljinu', 'za blizinu', 'za kompjuter', 'za stalno nošenj
 function purposeOptions(selected = '') {
   return PURPOSES.map(p => `<option value="${p}" ${p === selected ? 'selected' : ''}>${p}</option>`).join('');
 }
+
+function debounce(fn, wait = 350) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
