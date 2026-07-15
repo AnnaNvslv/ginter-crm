@@ -77,17 +77,26 @@ async function savePrescriptionForm(e) {
     payload[f] = v || null;
   });
 
-  let error;
+  let error, savedId = id;
   if (id) {
     ({ error } = await sb.from('prescriptions').update(payload).eq('id', id));
   } else {
-    ({ error } = await sb.from('prescriptions').insert(payload));
+    const res = await sb.from('prescriptions').insert(payload).select('id').single();
+    error = res.error;
+    savedId = res.data?.id;
   }
 
   if (error) { toast('Greška pri čuvanju recepta', true); return; }
   closeModal('rx-modal');
   toast('Recept sačuvan');
   await renderPrescriptionsTab();
+
+  if (savedId && confirm('Recept sačuvan. Da li odmah unosite porudžbinu?')) {
+    await switchTab('orders');
+    await openAddOrderModal();
+    const sel = document.getElementById('order-form-prescription');
+    if (sel) sel.value = savedId;
+  }
 }
 
 async function deletePrescription(id) {
