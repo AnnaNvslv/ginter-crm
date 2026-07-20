@@ -143,9 +143,9 @@
         <div></div>
 
         <div class="eye-label">Opšte</div>
+        <div><label>PD</label><input type="text" id="rx-form-pd"></div>
         <div><label>Add</label><input type="text" id="rx-form-add"></div>
         <div><label>Degr</label><input type="text" id="rx-form-degr"></div>
-        <div><label>PD</label><input type="text" id="rx-form-pd"></div>
         <div></div>
       </div>
 
@@ -230,13 +230,14 @@
       </div>
 
       <div class="total-box" style="margin-bottom:20px;">
-        <div class="row final"><span>Ukupno</span><span id="order-form-total-preview">0 RSD</span></div>
+        <div class="row"><span>Ukupno</span><span id="order-form-total-preview">0 RSD</span></div>
+        <div class="row final"><span>Ostalo za uplatu</span><span id="order-form-remaining-preview">0 RSD</span></div>
       </div>
 
       <div class="field-grid">
         <div>
-          <label>Avans</label>
-          <input type="number" id="order-form-prepayment" min="0" value="0">
+          <label>Akontacija</label>
+          <input type="number" id="order-form-prepayment" min="0" placeholder="0" oninput="updateOrderFormTotal()">
         </div>
       </div>
 
