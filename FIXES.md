@@ -36,6 +36,20 @@
 - Recepti в карточке пациента переведены в табличный вид (OD/OS × Sph/Cyl/Ax/Add/Degr/PD) вместо текстовых строк
 - Okviri/Stakla в карточке заказа тоже переведены в табличный вид
 
+## 2026-07-20 (часть 1 — без изменений схемы БД)
+- Recept: PD переставлен перед Add (было Add/Degr/PD → стало PD/Add/Degr)
+- Форма заказа: поле "Avans" переименовано в "Akontacija"; в блок с суммой добавлена живая строка "Ostalo za uplatu" (Ukupno − Akontacija), пересчитывается на лету
+- Карточка окна/стёкол/акontacije: цена окна, цена/скидка стекла, akontacija — были предзаполнены нулём, из-за чего плейсхолдер не был виден и легко было промахнуться; теперь поля пустые с плейсхолдером, пока не введено значение
+- Карточка заказа в списке заказов пациента: строки окон и стёкол теперь подписаны "Okvir — <namena>" / "Stakla — <namena>" вместо голой namena — понятно, что относится к оправе, а что к стеклу; надпись "Avans" в итогах заказа → "Akontacija"
+
+Запушено: `crm.html`, `js/orders.js`.
+
+### Отложено до подтверждения SQL (часть 2, будет в следующей записи)
+Требует новых колонок/таблицы в Supabase — см. SQL, отправленный Анне в чате:
+- Recept: namena выпадающим списком (za daljinu / za blizinu / za računar / progresivno / kontaktna sočiva), поля BC/DIA при выборе kontaktna sočiva, поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični), поле komentar
+- Porudžbina: множественный выбор рецептов (мультиселект) с показом параметров рецепта, способ оплаты (Gotovinom/Kartica/Ček/Virman)
+- История: кто и когда внёс рецепт/заказ/платёж (created_by) в карточках
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
