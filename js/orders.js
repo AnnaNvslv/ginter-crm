@@ -53,11 +53,11 @@ function renderOrderCard(o, frames, lenses, installments) {
   const remaining = total - (Number(o.prepayment) || 0) - paidViaInstallments;
 
   const framesRows = frames.map(f => `
-    <tr><td>${f.purpose}${f.frame_code ? ` (šifra ${f.frame_code})` : ''}</td><td>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</td></tr>
+    <tr><td>Okvir — ${f.purpose}${f.frame_code ? ` (šifra ${f.frame_code})` : ''}</td><td>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</td></tr>
   `).join('') || '<tr><td colspan="2" style="text-align:left;color:var(--text-light);font-weight:400;">Bez okvira</td></tr>';
 
   const lensesRows = lenses.map(l => `
-    <tr><td>${l.purpose}: ${l.lens_name || '—'}</td><td>× ${l.qty}</td><td>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</td></tr>
+    <tr><td>Stakla — ${l.purpose}: ${l.lens_name || '—'}</td><td>× ${l.qty}</td><td>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</td></tr>
   `).join('') || '<tr><td colspan="3" style="text-align:left;color:var(--text-light);font-weight:400;">Bez stakala</td></tr>';
 
   return `
@@ -88,7 +88,7 @@ function renderOrderCard(o, frames, lenses, installments) {
       `}
       <div class="total-box">
         <div class="row"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
-        <div class="row"><span>Avans</span><span>${fmtMoney(o.prepayment)}</span></div>
+        <div class="row"><span>Akontacija</span><span>${fmtMoney(o.prepayment)}</span></div>
         ${o.has_installment ? `
           <div class="row"><span>Uplaćeno na rate</span><span>${fmtMoney(paidViaInstallments)}</span></div>
           <div class="row final" style="color:#C0392B;"><span>Ostalo za uplatu</span><span>${fmtMoney(remaining)}</span></div>
@@ -179,7 +179,7 @@ function renderLensRows() {
 }
 
 function addFrameRow() {
-  orderFramesDraft.push({ purpose: PURPOSES[0], frame_code: '', is_client: false, price: 0 });
+  orderFramesDraft.push({ purpose: PURPOSES[0], frame_code: '', is_client: false, price: '' });
   renderFrameRows();
   updateOrderFormTotal();
 }
@@ -191,7 +191,7 @@ function removeFrameRow(i) {
 }
 
 function addLensRow() {
-  orderLensesDraft.push({ purpose: PURPOSES[0], lens_name: '', price_unit: 0, discount: 0, qty: 2 });
+  orderLensesDraft.push({ purpose: PURPOSES[0], lens_name: '', price_unit: '', discount: '', qty: 2 });
   renderLensRows();
   updateOrderFormTotal();
 }
@@ -211,8 +211,13 @@ function updateOrderFormTotal() {
     const qty = Number(document.getElementById('order-form-cl-qty')?.value) || 0;
     total = clTotal(price, qty);
   }
-  const el = document.getElementById('order-form-total-preview');
-  if (el) el.textContent = fmtMoney(total);
+  const prepayment = Number(document.getElementById('order-form-prepayment')?.value) || 0;
+  const remaining = total - prepayment;
+
+  const elTotal = document.getElementById('order-form-total-preview');
+  if (elTotal) elTotal.textContent = fmtMoney(total);
+  const elRemaining = document.getElementById('order-form-remaining-preview');
+  if (elRemaining) elRemaining.textContent = fmtMoney(remaining);
 }
 
 async function openAddOrderModal() {
@@ -245,7 +250,7 @@ async function openEditOrderModal(id) {
   document.getElementById('order-form-date').value = o.order_date || todayISO();
   document.getElementById('order-form-envelope').value = o.envelope_number || '';
   document.getElementById('order-form-comment').value = o.comment || '';
-  document.getElementById('order-form-prepayment').value = o.prepayment || 0;
+  document.getElementById('order-form-prepayment').value = o.prepayment || '';
 
   await populatePrescriptionSelect();
   document.getElementById('order-form-prescription').value = o.prescription_id || '';
@@ -265,7 +270,7 @@ async function openEditOrderModal(id) {
   document.getElementById('order-form-cl-bc').value = o.cl_bc || '';
   document.getElementById('order-form-cl-diopters').value = o.cl_diopters || '';
   document.getElementById('order-form-cl-period').value = o.cl_replacement_period || '';
-  document.getElementById('order-form-cl-price').value = o.cl_price || 0;
+  document.getElementById('order-form-cl-price').value = o.cl_price || '';
   document.getElementById('order-form-cl-qty').value = o.cl_qty || 1;
 
   toggleInstallmentFields(o.has_installment);
