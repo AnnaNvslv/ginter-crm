@@ -38,6 +38,15 @@ async function renderPrescriptionsTab() {
             </tr>
           </tbody>
         </table>
+        ${rx.purpose === 'kontaktna sočiva' && (rx.bc || rx.dia) ? `
+          <div class="kv-row" style="margin-top:8px;">
+            <span><b>BC:</b> ${rx.bc || '—'}</span>
+            <span><b>DIA:</b> ${rx.dia || '—'}</span>
+          </div>
+        ` : ''}
+        ${rx.checked_by ? `<div class="kv-row" style="margin-top:8px;"><span><b>Pregled izvršio/la:</b> ${rx.checked_by}</span></div>` : ''}
+        ${rx.comment ? `<div style="margin-top:10px;color:var(--text-light);">${rx.comment}</div>` : ''}
+        ${rx.created_by ? `<div class="entry-meta">Uneo/la: ${rx.created_by} · ${fmtDate(rx.created_at?.slice(0,10))}</div>` : ''}
       </div>
     `).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Još nema recepata</div>'}
   `;
@@ -45,10 +54,16 @@ async function renderPrescriptionsTab() {
   document.getElementById('tab-content').innerHTML = html;
 }
 
+function toggleRxClFields() {
+  const isCl = document.getElementById('rx-form-purpose').value === 'kontaktna sočiva';
+  document.getElementById('rx-cl-fields').style.display = isCl ? 'grid' : 'none';
+}
+
 function openAddPrescriptionModal() {
   document.getElementById('rx-modal-title').textContent = 'Novi recept';
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
+  toggleRxClFields();
   openModal('rx-modal');
 }
 
@@ -56,21 +71,33 @@ function openEditPrescriptionModal(id) {
   const rx = currentPrescriptions.find(r => r.id === id);
   document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
-  document.getElementById('rx-form-purpose').value = rx.purpose || '';
+  document.getElementById('rx-form-purpose').value = rx.purpose || 'za daljinu';
   document.getElementById('rx-form-client').checked = rx.is_client_rx;
   ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
     document.getElementById(`rx-form-${f}`).value = rx[f] ?? '';
   });
+  document.getElementById('rx-form-bc').value = rx.bc || '';
+  document.getElementById('rx-form-dia').value = rx.dia || '';
+  document.getElementById('rx-form-checked-by').value = rx.checked_by || '';
+  document.getElementById('rx-form-comment').value = rx.comment || '';
+  toggleRxClFields();
   openModal('rx-modal');
 }
 
 async function savePrescriptionForm(e) {
   e.preventDefault();
   const id = document.getElementById('rx-form-id').value;
+  const purpose = document.getElementById('rx-form-purpose').value;
+  const isCl = purpose === 'kontaktna sočiva';
+
   const payload = {
     patient_id: activePatientId,
-    purpose: document.getElementById('rx-form-purpose').value.trim() || null,
+    purpose,
     is_client_rx: document.getElementById('rx-form-client').checked,
+    bc: isCl ? (document.getElementById('rx-form-bc').value.trim() || null) : null,
+    dia: isCl ? (document.getElementById('rx-form-dia').value.trim() || null) : null,
+    checked_by: document.getElementById('rx-form-checked-by').value || null,
+    comment: document.getElementById('rx-form-comment').value.trim() || null,
   };
   ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
     const v = document.getElementById(`rx-form-${f}`).value.trim();
@@ -81,6 +108,7 @@ async function savePrescriptionForm(e) {
   if (id) {
     ({ error } = await sb.from('prescriptions').update(payload).eq('id', id));
   } else {
+    payload.created_by = getCurrentUser()?.name || null;
     const res = await sb.from('prescriptions').insert(payload).select('id').single();
     error = res.error;
     savedId = res.data?.id;
@@ -94,8 +122,8 @@ async function savePrescriptionForm(e) {
   if (savedId && confirm('Recept sačuvan. Da li odmah unosite porudžbinu?')) {
     await switchTab('orders');
     await openAddOrderModal();
-    const sel = document.getElementById('order-form-prescription');
-    if (sel) sel.value = savedId;
+    toggleOrderPrescription(savedId, true);
+    renderPrescriptionCheckboxes(currentPrescriptionsForOrder);
   }
 }
 
