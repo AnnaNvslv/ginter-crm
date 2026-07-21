@@ -233,33 +233,45 @@ function rxSummaryLine(rx) {
   return line;
 }
 
-function renderPrescriptionCheckboxes(list) {
+function rxOptionLabel(rx) {
+  return `${rx.purpose || 'recept'} — ${rxSummaryLine(rx)} (${fmtDate(rx.created_at?.slice(0,10))})`;
+}
+
+function renderPrescriptionRows() {
   const wrap = document.getElementById('order-form-prescriptions-list');
   if (!wrap) return;
-  if (!list.length) { wrap.innerHTML = '<div style="color:var(--text-light);font-size:15px;">Pacijent još nema recepata</div>'; return; }
-  wrap.innerHTML = list.map(rx => `
-    <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;">
-      <input type="checkbox" style="margin-top:3px;" value="${rx.id}" ${orderPrescriptionsDraft.includes(rx.id) ? 'checked' : ''} onchange="toggleOrderPrescription('${rx.id}', this.checked)">
-      <div>
-        <div style="font-weight:600;">${rx.purpose || 'recept'} <span style="color:var(--text-light);font-weight:400;font-size:13px;">(${fmtDate(rx.created_at?.slice(0,10))})</span></div>
-        <div style="color:var(--text-light);font-size:14px;">${rxSummaryLine(rx)}</div>
-      </div>
-    </label>
-  `).join('');
-}
-
-function toggleOrderPrescription(id, checked) {
-  if (checked) {
-    if (!orderPrescriptionsDraft.includes(id)) orderPrescriptionsDraft.push(id);
-  } else {
-    orderPrescriptionsDraft = orderPrescriptionsDraft.filter(x => x !== id);
+  if (!currentPrescriptionsForOrder.length) {
+    wrap.innerHTML = '<div style="color:var(--text-light);font-size:15px;">Pacijent još nema recepata</div>';
+    return;
   }
+  wrap.innerHTML = orderPrescriptionsDraft.map((rxId, i) => `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <select onchange="orderPrescriptionsDraft[${i}]=this.value" style="flex:1;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
+        ${currentPrescriptionsForOrder.map(rx => `<option value="${rx.id}" ${rx.id === rxId ? 'selected' : ''}>${rxOptionLabel(rx)}</option>`).join('')}
+      </select>
+      <button type="button" onclick="removePrescriptionRow(${i})" style="color:#C0392B;padding:6px;">×</button>
+    </div>
+  `).join('') || '<div style="color:var(--text-light);font-size:15px;">Nijedan recept nije povezan</div>';
 }
 
-async function populatePrescriptionCheckboxes() {
+function addPrescriptionRow() {
+  if (!currentPrescriptionsForOrder.length) { toast('Pacijent nema recepata', true); return; }
+  const used = new Set(orderPrescriptionsDraft);
+  const next = currentPrescriptionsForOrder.find(rx => !used.has(rx.id)) || currentPrescriptionsForOrder[0];
+  orderPrescriptionsDraft.push(next.id);
+  renderPrescriptionRows();
+}
+
+function removePrescriptionRow(i) {
+  orderPrescriptionsDraft.splice(i, 1);
+  renderPrescriptionRows();
+}
+
+async function populatePrescriptionOptions() {
   const { data } = await sb.from('prescriptions').select('*').eq('patient_id', activePatientId).order('created_at', { ascending: false });
   currentPrescriptionsForOrder = data || [];
-  renderPrescriptionCheckboxes(currentPrescriptionsForOrder);
+  orderPrescriptionsDraft = orderPrescriptionsDraft.filter(id => currentPrescriptionsForOrder.some(rx => rx.id === id));
+  renderPrescriptionRows();
 }
 
 function updateOrderFormTotal() {
@@ -292,7 +304,7 @@ async function openAddOrderModal() {
   setOrderType('glasses');
   renderFrameRows();
   renderLensRows();
-  await populatePrescriptionCheckboxes();
+  await populatePrescriptionOptions();
   toggleInstallmentFields(false);
   updateOrderFormTotal();
   openModal('order-modal');
@@ -319,7 +331,7 @@ async function openEditOrderModal(id) {
   orderPrescriptionsDraft = (opRes.data || []).map(r => r.prescription_id);
   renderFrameRows();
   renderLensRows();
-  await populatePrescriptionCheckboxes();
+  await populatePrescriptionOptions();
 
   setOrderType(o.order_type);
 
