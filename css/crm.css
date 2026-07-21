@@ -173,3 +173,5 @@
 .total-box .row.final { font-weight: 700; font-size: 20px; color: var(--accent); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
 
 .deleted-badge { color: var(--danger); font-size: 14px; font-weight: 600; }
+
+.entry-meta { font-size: 12px; color: var(--text-light); text-align: right; margin-top: 10px; }
