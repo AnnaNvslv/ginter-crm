@@ -36,10 +36,17 @@ function toast(msg, isError = false) {
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-const PURPOSES = ['za daljinu', 'za blizinu', 'za kompjuter', 'za stalno nošenje', 'progresivna', 'bifokalna'];
+// Jedinstven spisak namena — koristi se i za recepte i za okvire/stakla,
+// da bi grupisanje u kartici porudžbine uvek poklopilo recept sa okvirom/staklima.
+const PURPOSES = ['za daljinu', 'za blizinu', 'za računar', 'progresivno', 'bifokalno', 'za stalno nošenje'];
+const RX_PURPOSES = [...PURPOSES, 'kontaktna sočiva'];
 
 function purposeOptions(selected = '') {
   return PURPOSES.map(p => `<option value="${p}" ${p === selected ? 'selected' : ''}>${p}</option>`).join('');
+}
+
+function rxPurposeOptions(selected = '') {
+  return RX_PURPOSES.map(p => `<option value="${p}" ${p === selected ? 'selected' : ''}>${p}</option>`).join('');
 }
 
 function debounce(fn, wait = 350) {
