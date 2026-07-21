@@ -122,8 +122,8 @@ async function savePrescriptionForm(e) {
   if (savedId && confirm('Recept sačuvan. Da li odmah unosite porudžbinu?')) {
     await switchTab('orders');
     await openAddOrderModal();
-    toggleOrderPrescription(savedId, true);
-    renderPrescriptionCheckboxes(currentPrescriptionsForOrder);
+    orderPrescriptionsDraft = [savedId];
+    renderPrescriptionRows();
   }
 }
 
