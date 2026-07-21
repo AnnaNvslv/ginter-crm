@@ -127,7 +127,7 @@
     <form id="rx-form" onsubmit="savePrescriptionForm(event)">
       <input type="hidden" id="rx-form-id">
       <label>Namena</label>
-      <select id="rx-form-purpose" style="width:100%;margin-bottom:16px;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;">
+      <select id="rx-form-purpose" style="width:100%;margin-bottom:16px;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;" onchange="toggleRxClFields()">
         <option value="za daljinu">za daljinu</option>
         <option value="za blizinu">za blizinu</option>
         <option value="za računar">za računar</option>
@@ -155,10 +155,33 @@
         <div></div>
       </div>
 
+      <div id="rx-cl-fields" class="field-grid" style="display:none;margin-top:16px;">
+        <div>
+          <label>BC</label>
+          <input type="text" id="rx-form-bc" placeholder="npr. 8,6">
+        </div>
+        <div>
+          <label>DIA</label>
+          <input type="text" id="rx-form-dia" placeholder="npr. 14,2">
+        </div>
+      </div>
+
       <div class="checkbox-row" style="margin-top:16px;">
         <input type="checkbox" id="rx-form-client">
         <label for="rx-form-client">Klijentov recept</label>
       </div>
+
+      <label>Pregled izvršio/la</label>
+      <select id="rx-form-checked-by" style="width:100%;margin-bottom:16px;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;">
+        <option value="">— izaberite —</option>
+        <option value="Ervin">Ervin</option>
+        <option value="Anna">Anna</option>
+        <option value="Bojana">Bojana</option>
+        <option value="lični">lični</option>
+      </select>
+
+      <label>Komentar</label>
+      <textarea id="rx-form-comment" rows="2" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
 
       <div class="modal-actions">
         <button type="button" class="btn-secondary" onclick="closeModal('rx-modal')">Otkaži</button>
@@ -189,11 +212,10 @@
           <label>Broj porudžbine (sa koverte)</label>
           <input type="text" id="order-form-envelope">
         </div>
-        <div style="grid-column:1/-1;">
-          <label>Povezati recept</label>
-          <select id="order-form-prescription" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;"></select>
-        </div>
       </div>
+
+      <label>Povezati recept(e)</label>
+      <div id="order-form-prescriptions-list" style="margin-bottom:16px;"></div>
 
       <div id="glasses-fields">
         <div class="section-heading">Okviri</div>
@@ -203,6 +225,13 @@
         <div class="section-heading">Stakla</div>
         <div id="lens-container"></div>
         <button type="button" class="btn-secondary" onclick="addLensRow()" style="margin-bottom:20px;">+ Dodaj stakla</button>
+
+        <div class="field-grid">
+          <div>
+            <label>Izrada</label>
+            <input type="number" id="order-form-izrada" min="0" placeholder="0" oninput="updateOrderFormTotal()">
+          </div>
+        </div>
       </div>
 
       <div id="cl-fields" style="display:none;">
@@ -244,6 +273,16 @@
         <div>
           <label>Akontacija</label>
           <input type="number" id="order-form-prepayment" min="0" placeholder="0" oninput="updateOrderFormTotal()">
+        </div>
+        <div>
+          <label>Način plaćanja</label>
+          <select id="order-form-payment-method" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;">
+            <option value="">— izaberite —</option>
+            <option value="Gotovinom">Gotovinom</option>
+            <option value="Kartica">Kartica</option>
+            <option value="Ček">Ček</option>
+            <option value="Virman">Virman</option>
+          </select>
         </div>
       </div>
 
