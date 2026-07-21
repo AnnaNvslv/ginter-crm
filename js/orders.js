@@ -2,6 +2,8 @@ let currentOrders = [];
 let orderFormType = 'glasses';
 let orderFramesDraft = [];
 let orderLensesDraft = [];
+let orderPrescriptionsDraft = [];
+let currentPrescriptionsForOrder = [];
 
 async function renderOrdersTab() {
   const { data: orders, error } = await sb
@@ -15,17 +17,28 @@ async function renderOrdersTab() {
   currentOrders = orders;
 
   const orderIds = orders.map(o => o.id);
-  let framesByOrder = {}, lensesByOrder = {}, installmentsByOrder = {};
+  let framesByOrder = {}, lensesByOrder = {}, installmentsByOrder = {}, rxByOrder = {};
 
   if (orderIds.length) {
-    const [framesRes, lensesRes, instRes] = await Promise.all([
+    const [framesRes, lensesRes, instRes, opRes] = await Promise.all([
       sb.from('order_frames').select('*').in('order_id', orderIds),
       sb.from('order_lenses').select('*').in('order_id', orderIds),
       sb.from('installments').select('*').in('order_id', orderIds),
+      sb.from('order_prescriptions').select('order_id, prescription_id').in('order_id', orderIds),
     ]);
     (framesRes.data || []).forEach(f => { (framesByOrder[f.order_id] ??= []).push(f); });
     (lensesRes.data || []).forEach(l => { (lensesByOrder[l.order_id] ??= []).push(l); });
     (instRes.data || []).forEach(p => { (installmentsByOrder[p.order_id] ??= []).push(p); });
+
+    const rxIds = [...new Set((opRes.data || []).map(r => r.prescription_id))];
+    let rxMap = {};
+    if (rxIds.length) {
+      const { data: rxs } = await sb.from('prescriptions').select('id, purpose').in('id', rxIds);
+      (rxs || []).forEach(rx => { rxMap[rx.id] = rx; });
+    }
+    (opRes.data || []).forEach(link => {
+      (rxByOrder[link.order_id] ??= []).push(rxMap[link.prescription_id]?.purpose || 'recept');
+    });
   }
 
   const html = `
@@ -34,7 +47,8 @@ async function renderOrdersTab() {
       o,
       framesByOrder[o.id] || [],
       lensesByOrder[o.id] || [],
-      installmentsByOrder[o.id] || []
+      installmentsByOrder[o.id] || [],
+      rxByOrder[o.id] || []
     )).join('') || '<div class="empty-state" style="height:auto;padding:30px;">Još nema porudžbina</div>'}
   `;
   document.getElementById('tab-content').innerHTML = html;
@@ -46,9 +60,10 @@ function calcGlassesTotal(frames, lenses) {
   return Math.round(framesTotal + lensesTotal);
 }
 
-function renderOrderCard(o, frames, lenses, installments) {
+function renderOrderCard(o, frames, lenses, installments, rxPurposes) {
   const isGlasses = o.order_type === 'glasses';
-  const total = isGlasses ? calcGlassesTotal(frames, lenses) : clTotal(o.cl_price, o.cl_qty);
+  const izrada = Number(o.izrada_price) || 0;
+  const total = isGlasses ? calcGlassesTotal(frames, lenses) + izrada : clTotal(o.cl_price, o.cl_qty);
   const paidViaInstallments = installments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const remaining = total - (Number(o.prepayment) || 0) - paidViaInstallments;
 
@@ -70,6 +85,7 @@ function renderOrderCard(o, frames, lenses, installments) {
           <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deleteOrder('${o.id}')">Obr.</button>
         </div>
       </div>
+      ${rxPurposes.length ? `<div class="kv-row" style="margin-bottom:8px;"><span><b>Recepti:</b> ${rxPurposes.join(', ')}</span></div>` : ''}
       ${isGlasses ? `
         <table class="rx-table" style="margin-bottom:4px;">
           <tbody>${framesRows}</tbody>
@@ -77,6 +93,7 @@ function renderOrderCard(o, frames, lenses, installments) {
         <table class="rx-table">
           <tbody>${lensesRows}</tbody>
         </table>
+        ${izrada ? `<div class="kv-row" style="margin-bottom:4px;"><span><b>Izrada:</b> ${fmtMoney(izrada)}</span></div>` : ''}
       ` : `
         <div class="kv-row">
           <span><b>Naziv:</b> ${o.cl_name || '—'}</span>
@@ -89,6 +106,7 @@ function renderOrderCard(o, frames, lenses, installments) {
       <div class="total-box">
         <div class="row"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
         <div class="row"><span>Akontacija</span><span>${fmtMoney(o.prepayment)}</span></div>
+        ${o.payment_method ? `<div class="row"><span>Način plaćanja</span><span>${o.payment_method}</span></div>` : ''}
         ${o.has_installment ? `
           <div class="row"><span>Uplaćeno na rate</span><span>${fmtMoney(paidViaInstallments)}</span></div>
           <div class="row final" style="color:#C0392B;"><span>Ostalo za uplatu</span><span>${fmtMoney(remaining)}</span></div>
@@ -117,6 +135,7 @@ function renderOrderCard(o, frames, lenses, installments) {
         </div>
       ` : ''}
       ${o.comment ? `<div style="margin-top:10px;color:var(--text-light);">${o.comment}</div>` : ''}
+      ${o.created_by ? `<div class="entry-meta">Uneo/la: ${o.created_by} · ${fmtDate(o.order_date)}</div>` : ''}
     </div>
   `;
 }
@@ -134,7 +153,10 @@ async function saveQuickInstallment(orderId) {
   const type = document.getElementById(`quick-inst-type-${orderId}`).value;
   if (!amount) { toast('Unesite iznos', true); return; }
 
-  const { error } = await sb.from('installments').insert({ order_id: orderId, payment_date: date, amount, payment_type: type });
+  const { error } = await sb.from('installments').insert({
+    order_id: orderId, payment_date: date, amount, payment_type: type,
+    created_by: getCurrentUser()?.name || null,
+  });
   if (error) { toast('Greška pri dodavanju uplate', true); return; }
   toast('Uplata sačuvana');
   await renderOrdersTab();
@@ -202,10 +224,49 @@ function removeLensRow(i) {
   updateOrderFormTotal();
 }
 
+function rxSummaryLine(rx) {
+  const od = [rx.od_sph, rx.od_cyl, rx.od_ax].filter(Boolean).join('/') || '—';
+  const os = [rx.os_sph, rx.os_cyl, rx.os_ax].filter(Boolean).join('/') || '—';
+  let line = `OD ${od} · OS ${os}`;
+  if (rx.pd) line += ` · PD ${rx.pd}`;
+  if (rx.purpose === 'kontaktna sočiva' && (rx.bc || rx.dia)) line += ` · BC ${rx.bc || '—'} · DIA ${rx.dia || '—'}`;
+  return line;
+}
+
+function renderPrescriptionCheckboxes(list) {
+  const wrap = document.getElementById('order-form-prescriptions-list');
+  if (!wrap) return;
+  if (!list.length) { wrap.innerHTML = '<div style="color:var(--text-light);font-size:15px;">Pacijent još nema recepata</div>'; return; }
+  wrap.innerHTML = list.map(rx => `
+    <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;">
+      <input type="checkbox" style="margin-top:3px;" value="${rx.id}" ${orderPrescriptionsDraft.includes(rx.id) ? 'checked' : ''} onchange="toggleOrderPrescription('${rx.id}', this.checked)">
+      <div>
+        <div style="font-weight:600;">${rx.purpose || 'recept'} <span style="color:var(--text-light);font-weight:400;font-size:13px;">(${fmtDate(rx.created_at?.slice(0,10))})</span></div>
+        <div style="color:var(--text-light);font-size:14px;">${rxSummaryLine(rx)}</div>
+      </div>
+    </label>
+  `).join('');
+}
+
+function toggleOrderPrescription(id, checked) {
+  if (checked) {
+    if (!orderPrescriptionsDraft.includes(id)) orderPrescriptionsDraft.push(id);
+  } else {
+    orderPrescriptionsDraft = orderPrescriptionsDraft.filter(x => x !== id);
+  }
+}
+
+async function populatePrescriptionCheckboxes() {
+  const { data } = await sb.from('prescriptions').select('*').eq('patient_id', activePatientId).order('created_at', { ascending: false });
+  currentPrescriptionsForOrder = data || [];
+  renderPrescriptionCheckboxes(currentPrescriptionsForOrder);
+}
+
 function updateOrderFormTotal() {
   let total;
   if (orderFormType === 'glasses') {
-    total = calcGlassesTotal(orderFramesDraft, orderLensesDraft);
+    const izrada = Number(document.getElementById('order-form-izrada')?.value) || 0;
+    total = calcGlassesTotal(orderFramesDraft, orderLensesDraft) + izrada;
   } else {
     const price = Number(document.getElementById('order-form-cl-price')?.value) || 0;
     const qty = Number(document.getElementById('order-form-cl-qty')?.value) || 0;
@@ -227,20 +288,14 @@ async function openAddOrderModal() {
   document.getElementById('order-form-date').value = todayISO();
   orderFramesDraft = [];
   orderLensesDraft = [];
+  orderPrescriptionsDraft = [];
   setOrderType('glasses');
   renderFrameRows();
   renderLensRows();
-  await populatePrescriptionSelect();
+  await populatePrescriptionCheckboxes();
   toggleInstallmentFields(false);
   updateOrderFormTotal();
   openModal('order-modal');
-}
-
-async function populatePrescriptionSelect() {
-  const { data } = await sb.from('prescriptions').select('id, purpose, created_at').eq('patient_id', activePatientId).order('created_at', { ascending: false });
-  const select = document.getElementById('order-form-prescription');
-  select.innerHTML = '<option value="">— bez povezivanja —</option>' +
-    (data || []).map(rx => `<option value="${rx.id}">${rx.purpose || 'recept'} (${fmtDate(rx.created_at?.slice(0,10))})</option>`).join('');
 }
 
 async function openEditOrderModal(id) {
@@ -251,20 +306,22 @@ async function openEditOrderModal(id) {
   document.getElementById('order-form-envelope').value = o.envelope_number || '';
   document.getElementById('order-form-comment').value = o.comment || '';
   document.getElementById('order-form-prepayment').value = o.prepayment || '';
+  document.getElementById('order-form-payment-method').value = o.payment_method || '';
+  document.getElementById('order-form-izrada').value = o.izrada_price || '';
 
-  await populatePrescriptionSelect();
-  document.getElementById('order-form-prescription').value = o.prescription_id || '';
-
-  setOrderType(o.order_type);
-
-  const [framesRes, lensesRes] = await Promise.all([
+  const [framesRes, lensesRes, opRes] = await Promise.all([
     sb.from('order_frames').select('*').eq('order_id', id),
     sb.from('order_lenses').select('*').eq('order_id', id),
+    sb.from('order_prescriptions').select('prescription_id').eq('order_id', id),
   ]);
   orderFramesDraft = framesRes.data || [];
   orderLensesDraft = lensesRes.data || [];
+  orderPrescriptionsDraft = (opRes.data || []).map(r => r.prescription_id);
   renderFrameRows();
   renderLensRows();
+  await populatePrescriptionCheckboxes();
+
+  setOrderType(o.order_type);
 
   document.getElementById('order-form-cl-name').value = o.cl_name || '';
   document.getElementById('order-form-cl-bc').value = o.cl_bc || '';
@@ -292,6 +349,7 @@ async function loadInstallments() {
   document.getElementById('installment-list').innerHTML = (data || []).map(p => `
     <div class="kv-row" style="margin-bottom:6px;">
       <span>${fmtDate(p.payment_date)}</span><span>${fmtMoney(p.amount)}</span><span>${p.payment_type || ''}</span>
+      ${p.created_by ? `<span style="color:var(--text-light);font-size:13px;">${p.created_by}</span>` : ''}
       <button class="btn-secondary" style="padding:4px 10px;font-size:13px;" onclick="deleteInstallment('${p.id}')">×</button>
     </div>
   `).join('') || '<div style="color:var(--text-light);font-size:14px;">Još nema uplata</div>';
@@ -305,6 +363,7 @@ async function addInstallment() {
     payment_date: document.getElementById('installment-date').value || todayISO(),
     amount: Number(document.getElementById('installment-amount').value) || 0,
     payment_type: document.getElementById('installment-type').value,
+    created_by: getCurrentUser()?.name || null,
   };
   const { error } = await sb.from('installments').insert(payload);
   if (error) { toast('Greška pri dodavanju uplate', true); return; }
@@ -326,14 +385,15 @@ async function saveOrderForm(e) {
     order_date: document.getElementById('order-form-date').value || todayISO(),
     envelope_number: document.getElementById('order-form-envelope').value.trim() || null,
     order_type: orderFormType,
-    prescription_id: document.getElementById('order-form-prescription').value || null,
     prepayment: Number(document.getElementById('order-form-prepayment').value) || 0,
+    payment_method: document.getElementById('order-form-payment-method').value || null,
     has_installment: document.getElementById('order-form-installment').checked,
     comment: document.getElementById('order-form-comment').value.trim() || null,
   };
 
   if (orderFormType === 'glasses') {
-    payload.total_amount = calcGlassesTotal(orderFramesDraft, orderLensesDraft);
+    payload.izrada_price = Number(document.getElementById('order-form-izrada').value) || 0;
+    payload.total_amount = calcGlassesTotal(orderFramesDraft, orderLensesDraft) + payload.izrada_price;
   } else {
     payload.cl_name = document.getElementById('order-form-cl-name').value.trim() || null;
     payload.cl_bc = document.getElementById('order-form-cl-bc').value || null;
@@ -348,6 +408,7 @@ async function saveOrderForm(e) {
   if (id) {
     ({ error } = await sb.from('orders').update(payload).eq('id', id));
   } else {
+    payload.created_by = getCurrentUser()?.name || null;
     const res = await sb.from('orders').insert(payload).select('id').single();
     error = res.error;
     savedId = res.data?.id;
@@ -370,6 +431,13 @@ async function saveOrderForm(e) {
         price_unit: Number(l.price_unit) || 0, discount: Number(l.discount) || 0, qty: Number(l.qty) || 1,
       })));
     }
+  }
+
+  await sb.from('order_prescriptions').delete().eq('order_id', savedId);
+  if (orderPrescriptionsDraft.length) {
+    await sb.from('order_prescriptions').insert(orderPrescriptionsDraft.map(pid => ({
+      order_id: savedId, prescription_id: pid,
+    })));
   }
 
   document.getElementById('order-form-id').value = savedId;
