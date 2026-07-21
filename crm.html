@@ -127,7 +127,13 @@
     <form id="rx-form" onsubmit="savePrescriptionForm(event)">
       <input type="hidden" id="rx-form-id">
       <label>Namena</label>
-      <input type="text" id="rx-form-purpose" placeholder="npr. za daljinu" style="width:100%;margin-bottom:16px;">
+      <select id="rx-form-purpose" style="width:100%;margin-bottom:16px;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;">
+        <option value="za daljinu">za daljinu</option>
+        <option value="za blizinu">za blizinu</option>
+        <option value="za računar">za računar</option>
+        <option value="progresivno">progresivno</option>
+        <option value="kontaktna sočiva">kontaktna sočiva</option>
+      </select>
 
       <div class="rx-grid">
         <div class="eye-label">OD (desno oko)</div>
