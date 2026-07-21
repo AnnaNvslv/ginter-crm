@@ -44,11 +44,17 @@
 
 Запушено: `crm.html`, `js/orders.js`.
 
-### Отложено до подтверждения SQL (часть 2, будет в следующей записи)
-Требует новых колонок/таблицы в Supabase — см. SQL, отправленный Анне в чате:
-- Recept: namena выпадающим списком (za daljinu / za blizinu / za računar / progresivno / kontaktna sočiva), поля BC/DIA при выборе kontaktna sočiva, поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični), поле komentar
-- Porudžbina: множественный выбор рецептов (мультиселект) с показом параметров рецепта, способ оплаты (Gotovinom/Kartica/Ček/Virman)
-- История: кто и когда внёс рецепт/заказ/платёж (created_by) в карточках
+## 2026-07-21 (часть 2 — без изменений схемы БД)
+- Recept: Namena теперь выпадающий список (5 фиксированных значений: za daljinu, za blizinu, za računar, progresivno, kontaktna sočiva) вместо свободного текста
+- Forma porudžbine: после "Sačuvaj" popup теперь всегда закрывается и переключает пациента на вкладку Porudžbine (раньше при рассрочке popup оставался открытым для ввода уплат — теперь для этого используется кнопка "+ Dodaj uplatu" прямо в карточке заказа)
+
+Запушено: `crm.html`, `js/orders.js`.
+
+### Отложено до подтверждения SQL
+Требует новых колонок/таблицы в Supabase — SQL отправлен Анне в чате 2026-07-20, ещё не подтверждён как выполненный:
+- Recept: поля BC/DIA при выборе namena=kontaktna sočiva, поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični), поле komentar
+- Porudžbina: новое поле "Izrada" (учитывается в общей сумме, если введено) — нужна колонка `orders.izrada_price`; множественный выбор рецептов (мультиселект, для заказа очков за dalj + za bliz в одной porudžbini) — нужна таблица `order_prescriptions`; способ oplate (Gotovinom/Kartica/Ček/Virman)
+- История: кто и когда внёс recept/porudžbinu/uplatu (created_by) в карточках
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
