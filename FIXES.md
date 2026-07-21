@@ -50,15 +50,21 @@
 
 Запушено: `crm.html`, `js/orders.js`.
 
-### Отложено до подтверждения SQL
-Требует новых колонок/таблицы в Supabase — SQL отправлен Анне в чате 2026-07-20, ещё не подтверждён как выполненный:
-- Recept: поля BC/DIA при выборе namena=kontaktna sočiva, поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični), поле komentar
-- Porudžbina: новое поле "Izrada" (учитывается в общей сумме, если введено) — нужна колонка `orders.izrada_price`; множественный выбор рецептов (мультиселект, для заказа очков за dalj + za bliz в одной porudžbini) — нужна таблица `order_prescriptions`; способ oplate (Gotovinom/Kartica/Ček/Virman)
-- История: кто и когда внёс recept/porudžbinu/uplatu (created_by) в карточках
+## 2026-07-21 (часть 3 — SQL прогнан, все отложенные пункты реализованы)
+SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`, `comment`, `created_by`; `orders` получила `payment_method`, `created_by`, `izrada_price`; `installments` получила `created_by`; создана таблица `order_prescriptions` (многие-ко-многим заказ↔рецепт), старые связи из `orders.prescription_id` перенесены в неё.
+
+- **Recept**: при namena = kontaktna sočiva появляются поля BC и DIA (скрыты для остальных namena, `toggleRxClFields()`); новое поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični); новое поле "Komentar"; карточка рецепта показывает BC/DIA (если это kontaktna sočiva), Pregled izvršio/la, komentar, и внизу справа мелким текстом "Uneo/la: <ime> · <datum>"
+- **Porudžbina — mультиселект recepata**: вместо одиночного select теперь список чекбоксов по всем рецептам пациента; у каждого — namena, дата и строка с диоптриями (`OD sph/cyl/ax · OS sph/cyl/ax · PD`, плюс BC/DIA для kontaktna sočiva) — видно сразу, не открывая рецепт. Можно выбрать несколько (например, за dalj + za bliz в один заказ). Связи хранятся в `order_prescriptions`, при сохранении заказа старые связи для этого заказа удаляются и пишутся заново
+- **Porudžbina — Izrada**: новое поле в блоке Okviri/Stakla (только для naočare), учитывается в Ukupno и в живом пересчёте Ostalo za uplatu
+- **Porudžbina — Način plaćanja**: выпадающий список Gotovinom/Kartica/Ček/Virman рядом с Akontacija, отображается в карточке заказа
+- **Карточка заказа**: сверху показывает связанные recepti (namena через запятую), строка "Izrada" в итогах если введена, "Način plaćanja" в блоке суммы, внизу справа "Uneo/la: <ime> · <datum>"
+- **История uplata**: у каждой installment теперь видно, кто её внёс (created_by), как в списке в форме заказа, так и через быстрое добавление уплаты прямо из карточки
+
+Запушено: `crm.html`, `js/prescriptions.js`, `js/orders.js`, `css/crm.css`.
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
-- Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
+- Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
 - Рассмотреть хеширование паролей вместо plain text
 
 ## TODO (функционал)
