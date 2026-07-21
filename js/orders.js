@@ -33,11 +33,12 @@ async function renderOrdersTab() {
     const rxIds = [...new Set((opRes.data || []).map(r => r.prescription_id))];
     let rxMap = {};
     if (rxIds.length) {
-      const { data: rxs } = await sb.from('prescriptions').select('id, purpose').in('id', rxIds);
+      const { data: rxs } = await sb.from('prescriptions').select('*').in('id', rxIds);
       (rxs || []).forEach(rx => { rxMap[rx.id] = rx; });
     }
     (opRes.data || []).forEach(link => {
-      (rxByOrder[link.order_id] ??= []).push(rxMap[link.prescription_id]?.purpose || 'recept');
+      const rx = rxMap[link.prescription_id];
+      if (rx) (rxByOrder[link.order_id] ??= []).push(rx);
     });
   }
 
@@ -60,20 +61,36 @@ function calcGlassesTotal(frames, lenses) {
   return Math.round(framesTotal + lensesTotal);
 }
 
-function renderOrderCard(o, frames, lenses, installments, rxPurposes) {
+function renderOrderCard(o, frames, lenses, installments, rxLinks) {
   const isGlasses = o.order_type === 'glasses';
   const izrada = Number(o.izrada_price) || 0;
   const total = isGlasses ? calcGlassesTotal(frames, lenses) + izrada : clTotal(o.cl_price, o.cl_qty);
   const paidViaInstallments = installments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const remaining = total - (Number(o.prepayment) || 0) - paidViaInstallments;
 
-  const framesRows = frames.map(f => `
-    <tr><td>Okvir — ${f.purpose}${f.frame_code ? ` (šifra ${f.frame_code})` : ''}</td><td>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</td></tr>
-  `).join('') || '<tr><td colspan="2" style="text-align:left;color:var(--text-light);font-weight:400;">Bez okvira</td></tr>';
+  let itemsHtml = '';
+  if (isGlasses) {
+    const purposeOrder = [];
+    const seen = new Set();
+    [...frames.map(f => f.purpose), ...lenses.map(l => l.purpose), ...rxLinks.map(r => r.purpose)].forEach(p => {
+      if (p && !seen.has(p)) { seen.add(p); purposeOrder.push(p); }
+    });
 
-  const lensesRows = lenses.map(l => `
-    <tr><td>Stakla — ${l.purpose}: ${l.lens_name || '—'}</td><td>× ${l.qty}</td><td>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</td></tr>
-  `).join('') || '<tr><td colspan="3" style="text-align:left;color:var(--text-light);font-weight:400;">Bez stakala</td></tr>';
+    itemsHtml = purposeOrder.map(purpose => {
+      const rx = rxLinks.find(r => r.purpose === purpose) || null;
+      const fList = frames.filter(f => f.purpose === purpose);
+      const lList = lenses.filter(l => l.purpose === purpose);
+      return `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+          <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">${purpose}</div>
+          ${rx ? `<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">${rxSummaryLine(rx)}</div>` : `<div style="color:var(--text-light);font-size:14px;margin-bottom:8px;">Recept nije povezan</div>`}
+          ${fList.map(f => `<div class="kv-row" style="margin-bottom:4px;"><span>Okvir${f.frame_code ? ` (šifra ${f.frame_code})` : ''}</span><span>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</span></div>`).join('')}
+          ${lList.map(l => `<div class="kv-row" style="margin-bottom:4px;"><span>Stakla: ${l.lens_name || '—'} × ${l.qty}</span><span>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</span></div>`).join('')}
+          ${!fList.length && !lList.length ? `<div style="color:var(--text-light);font-size:14px;">Bez okvira i stakala za ovu namenu</div>` : ''}
+        </div>
+      `;
+    }).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:10px;">Bez okvira i stakala</div>';
+  }
 
   return `
     <div class="list-card">
@@ -85,14 +102,8 @@ function renderOrderCard(o, frames, lenses, installments, rxPurposes) {
           <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deleteOrder('${o.id}')">Obr.</button>
         </div>
       </div>
-      ${rxPurposes.length ? `<div class="kv-row" style="margin-bottom:8px;"><span><b>Recepti:</b> ${rxPurposes.join(', ')}</span></div>` : ''}
       ${isGlasses ? `
-        <table class="rx-table" style="margin-bottom:4px;">
-          <tbody>${framesRows}</tbody>
-        </table>
-        <table class="rx-table">
-          <tbody>${lensesRows}</tbody>
-        </table>
+        ${itemsHtml}
         ${izrada ? `<div class="kv-row" style="margin-bottom:4px;"><span><b>Izrada:</b> ${fmtMoney(izrada)}</span></div>` : ''}
       ` : `
         <div class="kv-row">
@@ -104,14 +115,15 @@ function renderOrderCard(o, frames, lenses, installments, rxPurposes) {
         </div>
       `}
       <div class="total-box">
-        <div class="row"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
         <div class="row"><span>Akontacija</span><span>${fmtMoney(o.prepayment)}</span></div>
         ${o.payment_method ? `<div class="row"><span>Način plaćanja</span><span>${o.payment_method}</span></div>` : ''}
         ${o.has_installment ? `
+          <div class="row"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
           <div class="row"><span>Uplaćeno na rate</span><span>${fmtMoney(paidViaInstallments)}</span></div>
           <div class="row final" style="color:#C0392B;"><span>Ostalo za uplatu</span><span>${fmtMoney(remaining)}</span></div>
         ` : `
-          <div class="row final"><span>Doplata</span><span>${fmtMoney(remaining)}</span></div>
+          <div class="row"><span>Doplata</span><span>${fmtMoney(remaining)}</span></div>
+          <div class="row final"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
         `}
       </div>
       ${o.has_installment ? `
