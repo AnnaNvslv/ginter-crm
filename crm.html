@@ -132,6 +132,8 @@
         <option value="za blizinu">za blizinu</option>
         <option value="za računar">za računar</option>
         <option value="progresivno">progresivno</option>
+        <option value="bifokalno">bifokalno</option>
+        <option value="za stalno nošenje">za stalno nošenje</option>
         <option value="kontaktna sočiva">kontaktna sočiva</option>
       </select>
 
@@ -317,6 +319,17 @@
         <button type="submit" class="btn-primary">Sačuvaj</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal: Pregled porudžbine (samo za čitanje) -->
+<div class="modal-overlay" id="order-view-modal">
+  <div class="modal">
+    <h3 id="order-view-title">Porudžbina</h3>
+    <div id="order-view-content"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" onclick="closeModal('order-view-modal')">Zatvori</button>
+    </div>
   </div>
 </div>
 
