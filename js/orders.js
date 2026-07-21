@@ -375,12 +375,8 @@ async function saveOrderForm(e) {
   document.getElementById('order-form-id').value = savedId;
   toast('Porudžbina sačuvana');
 
-  if (payload.has_installment) {
-    await loadInstallments();
-  } else {
-    closeModal('order-modal');
-  }
-  await renderOrdersTab();
+  closeModal('order-modal');
+  await switchTab('orders');
 }
 
 async function deleteOrder(id) {
