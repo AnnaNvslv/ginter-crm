@@ -411,6 +411,15 @@ function updateOrderFormTotal() {
   if (elRemaining) elRemaining.textContent = fmtMoney(remaining);
 }
 
+// Fokusira polje "Broj porudžbine" umesto podrazumevanog prvog polja (Datum),
+// pošto je datum već automatski popunjen i ne treba ga menjati u većini slučajeva.
+function focusEnvelopeField() {
+  setTimeout(() => {
+    const el = document.getElementById('order-form-envelope');
+    if (el) { el.focus(); el.select(); }
+  }, 0);
+}
+
 // dateOverride: kada se porudžbina otvara odmah nakon kreiranja novog pacijenta
 // (lanac Pacijent → Recept → Porudžbina), prosleđuje se datum posete pacijenta
 // umesto današnjeg datuma. Van tog lanca uvek je današnji datum.
@@ -431,6 +440,7 @@ async function openAddOrderModal(dateOverride) {
   toggleInstallmentFields(false);
   updateOrderFormTotal();
   openModal('order-modal');
+  focusEnvelopeField();
 }
 
 async function openEditOrderModal(id) {
@@ -471,6 +481,7 @@ async function openEditOrderModal(id) {
 
   updateOrderFormTotal();
   openModal('order-modal');
+  focusEnvelopeField();
 }
 
 function toggleInstallmentFields(show) {
