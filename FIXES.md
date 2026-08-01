@@ -54,7 +54,7 @@
 SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`, `comment`, `created_by`; `orders` получила `payment_method`, `created_by`, `izrada_price`; `installments` получила `created_by`; создана таблица `order_prescriptions` (многие-ко-многим заказ↔рецепт), старые связи из `orders.prescription_id` перенесены в неё.
 
 - **Recept**: при namena = kontaktna sočiva появляются поля BC и DIA (скрыты для остальных namena, `toggleRxClFields()`); новое поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični); новое поле "Komentar"; карточка рецепта показывает BC/DIA (если это kontaktna sočiva), Pregled izvršio/la, komentar, и внизу справа мелким текстом "Uneo/la: <ime> · <datum>"
-- **Porudžbina — mультиселект recepata**: вместо одиночного select теперь список чекбоксов по всем рецептам пациента; у каждого — namena, дата и строка с диоптриями (`OD sph/cyl/ax · OS sph/cyl/ax · PD`, плюс BC/DIA для kontaktna sočiva) — видно сразу, не открывая рецепт. Можно выбрать несколько (например, за dalj + za bliz в один заказ). Связи хранятся в `order_prescriptions`, при сохранении заказа старые связи для этого заказа удаляются и пишутся заново
+- **Porudžbina — mультиselект recepata**: вместо одиночного select теперь список чекбоксов по всем рецептам пациента; у каждого — namena, дата и строка с диоптриями (`OD sph/cyl/ax · OS sph/cyl/ax · PD`, плюс BC/DIA для kontaktna sočiva) — видно сразу, не открывая рецепт. Можно выбрать несколько (например, за dalj + za bliz в один заказ). Связи хранятся в `order_prescriptions`, при сохранении заказа старые связи для этого заказа удаляются и пишутся заново
 - **Porudžbina — Izrada**: новое поле в блоке Okviri/Stakla (только для naočare), учитывается в Ukupno и в живом пересчёте Ostalo za uplatu
 - **Porudžbina — Način plaćanja**: выпадающий список Gotovinom/Kartica/Ček/Virman рядом с Akontacija, отображается в карточке заказа
 - **Карточка заказа**: сверху показывает связанные recepti (namena через запятую), строка "Izrada" в итогах если введена, "Način plaćanja" в блоке суммы, внизу справа "Uneo/la: <ime> · <datum>"
@@ -68,6 +68,14 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 - Итоговый блок суммы в карточке заказа: если заказ НЕ на рате — "Doplata" теперь обычной строкой, а "Iznos" (полная стоимость) стал крупным/выделенным; если на рате — как раньше "Ostalo za uplatu" крупно выделено красным
 
 Запушено: `crm.html`, `js/orders.js`, `js/prescriptions.js`.
+
+## 2026-08-01
+- **Список пациентов**: отображение имени изменено на "Фамилия Имя" (было "Имя Фамилия") — теперь совпадает с сортировкой по фамилии, легче искать глазами. Затронуло и заголовок карточки пациента (`fullName()` в `js/patients.js`)
+- **Модалки (Pacijent / Recept / Porudžbina)**:
+  - При открытии popup курсор теперь сразу ставится в первое поле формы — не нужно кликать мышкой (`openModal()` в `js/utils.js`)
+  - Enter в текстовом поле/select больше не сохраняет и не закрывает форму — переводит фокус на следующее поле. На последнем поле Enter фокусирует кнопку "Sačuvaj" (повторный Enter уже сохраняет). Textarea и кнопки ведут себя как обычно (перенос строки / клик) — новая функция `initEnterNavigation()` в `js/utils.js`, работает и для динамически добавляемых полей (окна/стёкла/рецепты/рассрочка в форме заказа)
+
+Запушено: `js/patients.js`, `js/utils.js`.
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
