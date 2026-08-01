@@ -95,13 +95,24 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 
 Запушено (JS/HTML): `crm.html`, `js/orders.js`.
 
+## 2026-08-01 (часть 4 — čist katalog predloga umesto istorije, SQL progan)
+Anna je primetila da je istorija `order_lenses` puna neujednačenih unosa (mnogo varijacija istog naziva/indeksa) i tražila da se to počisti.
+
+**SQL progan**: nova tabela `lens_catalog` (`id uuid`, `kind text` — 'name'/'index'/'coating', `value text`, `unique(kind, value)`) — bez RLS, kao i ostale tabele u ovom projektu.
+
+- **Predlozi sada dolaze iz `lens_catalog`, a ne iz istorije porudžbina** — katalog kreće prazan, tako da se sav stari neujednačeni unos odmah gubi iz predloga (`loadLensAutocompleteData()` sada čita `lens_catalog` umesto `order_lenses`)
+- **Katalog se sam puni ubuduće**: pri svakom čuvanju porudžbine, `updateLensCatalog()` upisuje naziv/indeks/premaz svakog stakla u katalog (`upsert` sa `ignoreDuplicates`, po `unique(kind, value)`) — tako se predlozi grade postepeno iz stvarno korišćenih vrednosti od danas pa nadalje, bez ručnog održavanja
+- Ako se kasnije primeti pogrešna/duplirana vrednost u predlozima, briše se jednom SQL komandom iz `lens_catalog` (npr. `delete from lens_catalog where kind='name' and value='...'`)
+
+Запушено: `js/orders.js`.
+
 ⏳ **Ostaje da se uradi** (SQL kolone postoje, JS/HTML deo još nije napisan):
 - Polje "Datum recepta" u formi recepta — koristi `prescriptions.rx_date`, nasleđuje `pendingQuickAddDate` u lancu Pacijent→Recept→Porudžbina, inače današnji datum
 - Polje "Popust na porudžbinu (%)" u formi porudžbine — koristi `orders.discount_percent`, primenjuje se na ukupan iznos, utiče na "Ostalo za uplatu" i na `total_amount`
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
-- Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions` (сейчас `using(true)` — anon key технически может читать/писать всё напрямую)
+- Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
 - Рассмотреть хеширование паролей вместо plain text
 
 ## TODO (функционал)
