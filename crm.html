@@ -81,6 +81,7 @@
 <!-- Modal: Pacijent -->
 <div class="modal-overlay" id="patient-modal">
   <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('patient-modal')" aria-label="Zatvori">&times;</button>
     <h3 id="patient-modal-title">Novi pacijent</h3>
     <form id="patient-form" onsubmit="savePatientForm(event)">
       <input type="hidden" id="patient-form-id">
@@ -123,6 +124,7 @@
 <!-- Modal: Recept -->
 <div class="modal-overlay" id="rx-modal">
   <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('rx-modal'); pendingQuickAddDate=null;" aria-label="Zatvori">&times;</button>
     <h3 id="rx-modal-title">Novi recept</h3>
     <form id="rx-form" onsubmit="savePrescriptionForm(event)">
       <input type="hidden" id="rx-form-id">
@@ -196,6 +198,7 @@
 <!-- Modal: Porudžbina -->
 <div class="modal-overlay" id="order-modal">
   <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('order-modal')" aria-label="Zatvori">&times;</button>
     <h3 id="order-modal-title">Nova porudžbina</h3>
     <form id="order-form" onsubmit="saveOrderForm(event)">
       <input type="hidden" id="order-form-id">
@@ -328,6 +331,7 @@
 <!-- Modal: Pregled porudžbine (samo za čitanje) -->
 <div class="modal-overlay" id="order-view-modal">
   <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('order-view-modal')" aria-label="Zatvori">&times;</button>
     <h3 id="order-view-title">Porudžbina</h3>
     <div id="order-view-content"></div>
     <div class="modal-actions">
