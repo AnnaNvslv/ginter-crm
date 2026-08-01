@@ -204,9 +204,8 @@ function renderFrameRows() {
   `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">Nema dodatih okvira</div>';
 }
 
-// Naziv stakla je u svom širokom redu (sa autocomplete listom iz istorije svih
-// porudžbina). Ispod: namena/cena/popust/kol., pa indeks i premaz (takođe sa
-// autocomplete listama iz istorije), da ne treba ponovo kucati iste vrednosti.
+// Naziv stakla je u svom širokom redu (sa autocomplete listom iz kataloga). Ispod:
+// indeks i premaz (takođe iz kataloga), pa namena/cena/popust/kol.
 function renderLensRows() {
   document.getElementById('lens-container').innerHTML = orderLensesDraft.map((l, i) => `
     <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
@@ -254,20 +253,20 @@ function removeLensRow(i) {
   updateOrderFormTotal();
 }
 
-// Učitava sve vrednosti naziva/indeksa/premaza stakala koje su ikad unete (kod bilo kog
-// pacijenta) i puni <datalist> elemente da se pri kliku/kucanju odmah nudi izbor iz
-// istorije — ne treba svaki put ponovo kucati iste vrednosti.
+// Učitava predloge iz "čistog" kataloga (tabela lens_catalog) — ne iz istorije porudžbina,
+// da stare, nekonzistentne unose ne bi zatrpavale <datalist>. Katalog se sam popunjava
+// dalje kroz saveOrderForm() svaki put kad se sačuva nova vrednost.
 async function loadLensAutocompleteData() {
-  const { data } = await sb.from('order_lenses').select('lens_name, lens_index, lens_coating').limit(3000);
-  const names = new Set(), indexes = new Set(), coatings = new Set();
+  const { data } = await sb.from('lens_catalog').select('kind, value').order('value');
+  const names = [], indexes = [], coatings = [];
   (data || []).forEach(r => {
-    if (r.lens_name) names.add(r.lens_name.trim());
-    if (r.lens_index) indexes.add(r.lens_index.trim());
-    if (r.lens_coating) coatings.add(r.lens_coating.trim());
+    if (r.kind === 'name') names.push(r.value);
+    else if (r.kind === 'index') indexes.push(r.value);
+    else if (r.kind === 'coating') coatings.push(r.value);
   });
-  knownLensNames = [...names].sort((a, b) => a.localeCompare(b, 'sr'));
-  knownLensIndexes = [...indexes].sort((a, b) => a.localeCompare(b, 'sr'));
-  knownLensCoatings = [...coatings].sort((a, b) => a.localeCompare(b, 'sr'));
+  knownLensNames = names;
+  knownLensIndexes = indexes;
+  knownLensCoatings = coatings;
 
   const esc = v => v.replace(/"/g, '&quot;');
   const nameList = document.getElementById('lens-name-list');
@@ -276,6 +275,26 @@ async function loadLensAutocompleteData() {
   if (idxList) idxList.innerHTML = knownLensIndexes.map(v => `<option value="${esc(v)}"></option>`).join('');
   const coatList = document.getElementById('lens-coating-list');
   if (coatList) coatList.innerHTML = knownLensCoatings.map(v => `<option value="${esc(v)}"></option>`).join('');
+}
+
+// Dodaje u katalog svaku vrednost koja je upravo sačuvana u porudžbini, ako je tu već nema
+// (ON CONFLICT DO NOTHING preko unique(kind, value)). Tako se predlozi grade postepeno
+// iz stvarno korišćenih vrednosti, bez ručnog održavanja liste.
+async function updateLensCatalog(lenses) {
+  const rows = [];
+  const seen = new Set();
+  lenses.forEach(l => {
+    [['name', l.lens_name], ['index', l.lens_index], ['coating', l.lens_coating]].forEach(([kind, raw]) => {
+      const value = (raw || '').trim();
+      if (!value) return;
+      const key = kind + '::' + value;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push({ kind, value });
+    });
+  });
+  if (!rows.length) return;
+  await sb.from('lens_catalog').upsert(rows, { onConflict: 'kind,value', ignoreDuplicates: true });
 }
 
 // Dodaje po jedan red okvira i stakala za datu namenu, ali samo ako takva namena
@@ -548,6 +567,7 @@ async function saveOrderForm(e) {
         lens_index: l.lens_index || null, lens_coating: l.lens_coating || null,
         price_unit: Number(l.price_unit) || 0, discount: Number(l.discount) || 0, qty: Number(l.qty) || 1,
       })));
+      await updateLensCatalog(orderLensesDraft);
     }
   }
 
