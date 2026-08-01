@@ -15,7 +15,7 @@ async function loadPatients() {
 }
 
 function fullName(p) {
-  return [p.first_name, p.last_name].filter(Boolean).join(' ');
+  return [p.last_name, p.first_name].filter(Boolean).join(' ');
 }
 
 function initials(p) {
