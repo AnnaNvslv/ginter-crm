@@ -84,20 +84,20 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 
 Запушено: `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `crm.html`.
 
-## ⏳ Čeka SQL (Anna treba da pokrene u Supabase SQL Editoru) — popust na porudžbinu i datum recepta
+## 2026-08-01 (часть 3 — bugfix + SQL прогнан + автоподсказки за stakla)
+**Bugfix**: заказ с контактными линзами не сохранялся — поле BC (`orders.cl_bc`) имело тип `numeric`, а вносилось через запятую ("8,6"), что невалидно для numeric. Исправлено миграцией `ALTER TABLE orders ALTER COLUMN cl_bc TYPE text` (как и `prescriptions.bc`, который уже был text).
 
-```sql
--- Popust na celu porudžbinu (procenat, 0–100)
-ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent numeric(5,2) NOT NULL DEFAULT 0;
+**SQL прогнан**: `orders.discount_percent` (numeric, default 0), `prescriptions.rx_date` (date, default CURRENT_DATE), `order_lenses.lens_index` (text), `order_lenses.lens_coating` (text).
 
--- Datum recepta koji korisnik može ručno da unese/promeni
--- (odvojeno od created_at, koji ostaje kao pravo vreme unosa u sistem)
-ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS rx_date date NOT NULL DEFAULT CURRENT_DATE;
-```
+- **Naziv stakla — automatski predlozi**: pri kliku/kucanju u polje "naziv stakla" u formi porudžbine nudi se `<datalist>` sa svim nazivima koji su ikad uneti (kod bilo kog pacijenta, bilo kog zaposlenog) — ne treba ponovo kucati isti naziv. Isto i za nova polja **Indeks** (npr. 1.5/1.6/1.67/1.74) i **Premaz** (npr. AR/UV/blue) — kolone `order_lenses.lens_index` / `lens_coating`, učitavaju se u `loadLensAutocompleteData()` (`js/orders.js`), pune `<datalist>` elemente definisane u `crm.html` (`lens-name-list`, `lens-index-list`, `lens-coating-list`)
+- **Red stakla u formi porudžbine redizajniran**: naziv stakla je sada u svom širokom redu (gore, pored namene), indeks/premaz u sredini, cena/popust/kol. na dnu — umesto jednog zbijenog reda sa 6 uskih polja (`renderLensRows()` u `js/orders.js`)
+- Prikaz stakala u karčici porudžbine (`renderOrderCard` → `lensDescriptor()`) sada uključuje indeks i premaz pored naziva, ako su uneti
 
-Nakon što se ovaj SQL pokrene, sledi:
-- Polje "Datum recepta" u formi recepta — nasleđuje `pendingQuickAddDate` u lancu Pacijent→Recept, inače današnji datum
-- Polje "Popust na porudžbinu (%)" u formi porudžbine — primenjuje se na ukupan iznos (okviri+stakla+izrada, ili kontaktna sočiva), utiče na "Ostalo za uplatu" i na `total_amount` koji se koristi u tabelama Porudžbine/Dugovanja
+Запушено (JS/HTML): `crm.html`, `js/orders.js`.
+
+⏳ **Ostaje da se uradi** (SQL kolone postoje, JS/HTML deo još nije napisan):
+- Polje "Datum recepta" u formi recepta — koristi `prescriptions.rx_date`, nasleđuje `pendingQuickAddDate` u lancu Pacijent→Recept→Porudžbina, inače današnji datum
+- Polje "Popust na porudžbinu (%)" u formi porudžbine — koristi `orders.discount_percent`, primenjuje se na ukupan iznos, utiče na "Ostalo za uplatu" i na `total_amount`
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
