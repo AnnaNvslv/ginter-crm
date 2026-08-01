@@ -119,7 +119,9 @@ async function savePrescriptionForm(e) {
   toast('Recept sačuvan');
   await renderPrescriptionsTab();
 
-  if (savedId && confirm('Recept sačuvan. Da li odmah unosite porudžbinu?')) {
+  // Nakon svakog snimljenog recepta odmah se otvara forma porudžbine (bez pitanja) —
+  // recept se automatski povezuje, okvir/stakla za tu namenu se odmah dodaju.
+  if (savedId) {
     await switchTab('orders');
     // pendingQuickAddDate (ako postoji) prenosi datum pacijenta u formu porudžbine;
     // openAddOrderModal ga sam resetuje nakon upotrebe.
@@ -130,8 +132,6 @@ async function savePrescriptionForm(e) {
     renderFrameRows();
     renderLensRows();
     updateOrderFormTotal();
-  } else {
-    pendingQuickAddDate = null;
   }
 }
 
