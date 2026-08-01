@@ -33,8 +33,48 @@ function toast(msg, isError = false) {
   setTimeout(() => el.remove(), 2500);
 }
 
-function openModal(id) { document.getElementById(id).classList.add('active'); }
+function openModal(id) {
+  const modal = document.getElementById(id);
+  modal.classList.add('active');
+  setTimeout(() => {
+    const first = modal.querySelector(
+      'form input:not([type="hidden"]):not(:disabled), form select:not(:disabled), form textarea:not(:disabled)'
+    );
+    if (first && first.offsetParent !== null) {
+      first.focus();
+      if (typeof first.select === 'function') first.select();
+    }
+  }, 0);
+}
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// Enter u poljima forme prebacuje fokus na sledeće polje umesto da odmah snimi i zatvori.
+// Na poslednjem polju Enter fokusira dugme "Sačuvaj" (sledeći Enter tada zaista snima).
+// Textarea i dugmad zadržavaju svoje uobičajeno ponašanje (nova linija / klik).
+function initEnterNavigation() {
+  document.querySelectorAll('.modal form').forEach(form => {
+    if (form.dataset.navBound) return;
+    form.dataset.navBound = '1';
+    form.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const tag = e.target.tagName;
+      if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
+      e.preventDefault();
+      const fields = Array.from(form.querySelectorAll('input, select, textarea'))
+        .filter(el => el.type !== 'hidden' && !el.disabled && el.offsetParent !== null);
+      const idx = fields.indexOf(e.target);
+      if (idx === -1) return;
+      const next = fields[idx + 1];
+      if (next) {
+        next.focus();
+        if (typeof next.select === 'function') next.select();
+      } else {
+        form.querySelector('button[type="submit"]')?.focus();
+      }
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', initEnterNavigation);
 
 // Jedinstven spisak namena — koristi se i za recepte i za okvire/stakla,
 // da bi grupisanje u kartici porudžbine uvek poklopilo recept sa okvirom/staklima.
