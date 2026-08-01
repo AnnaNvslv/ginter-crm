@@ -59,12 +59,22 @@ function toggleRxClFields() {
   document.getElementById('rx-cl-fields').style.display = isCl ? 'grid' : 'none';
 }
 
+// Fokusira polje OD Sph umesto podrazumevanog prvog polja (Namena), pošto se ono
+// najčešće prvo popunjava pri unosu recepta.
+function focusRxSphField() {
+  setTimeout(() => {
+    const el = document.getElementById('rx-form-od_sph');
+    if (el) { el.focus(); el.select(); }
+  }, 0);
+}
+
 function openAddPrescriptionModal() {
   document.getElementById('rx-modal-title').textContent = 'Novi recept';
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
   toggleRxClFields();
   openModal('rx-modal');
+  focusRxSphField();
 }
 
 function openEditPrescriptionModal(id) {
@@ -82,6 +92,7 @@ function openEditPrescriptionModal(id) {
   document.getElementById('rx-form-comment').value = rx.comment || '';
   toggleRxClFields();
   openModal('rx-modal');
+  focusRxSphField();
 }
 
 async function savePrescriptionForm(e) {
