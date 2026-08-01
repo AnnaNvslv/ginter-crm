@@ -5,6 +5,8 @@ let orderLensesDraft = [];
 let orderPrescriptionsDraft = [];
 let currentPrescriptionsForOrder = [];
 let knownLensNames = [];
+let knownLensIndexes = [];
+let knownLensCoatings = [];
 
 async function renderOrdersTab() {
   const { data: orders, error } = await sb
@@ -62,6 +64,10 @@ function calcGlassesTotal(frames, lenses) {
   return Math.round(framesTotal + lensesTotal);
 }
 
+function lensDescriptor(l) {
+  return [l.lens_name || '—', l.lens_index, l.lens_coating].filter(Boolean).join(' · ');
+}
+
 function renderOrderCard(o, frames, lenses, installments, rxLinks) {
   const isGlasses = o.order_type === 'glasses';
   const izrada = Number(o.izrada_price) || 0;
@@ -86,7 +92,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks) {
           <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">${purpose}</div>
           ${rx ? `<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">${rxSummaryLine(rx)}</div>` : `<div style="color:var(--text-light);font-size:14px;margin-bottom:8px;">Recept nije povezan</div>`}
           ${fList.map(f => `<div class="kv-row" style="margin-bottom:4px;"><span>Okvir${f.frame_code ? ` (šifra ${f.frame_code})` : ''}</span><span>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</span></div>`).join('')}
-          ${lList.map(l => `<div class="kv-row" style="margin-bottom:4px;"><span>Stakla: ${l.lens_name || '—'} × ${l.qty}</span><span>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</span></div>`).join('')}
+          ${lList.map(l => `<div class="kv-row" style="margin-bottom:4px;"><span>Stakla: ${lensDescriptor(l)} × ${l.qty}</span><span>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</span></div>`).join('')}
           ${!fList.length && !lList.length ? `<div style="color:var(--text-light);font-size:14px;">Bez okvira i stakala za ovu namenu</div>` : ''}
         </div>
       `;
@@ -198,8 +204,9 @@ function renderFrameRows() {
   `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">Nema dodatih okvira</div>';
 }
 
-// Naziv stakla je sada u svom redu (širok, sa autocomplete listom iz istorije svih
-// porudžbina), a namena/cena/popust/kol. ispod, u drugom redu.
+// Naziv stakla je u svom širokom redu (sa autocomplete listom iz istorije svih
+// porudžbina). Ispod: namena/cena/popust/kol., pa indeks i premaz (takođe sa
+// autocomplete listama iz istorije), da ne treba ponovo kucati iste vrednosti.
 function renderLensRows() {
   document.getElementById('lens-container').innerHTML = orderLensesDraft.map((l, i) => `
     <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
@@ -209,6 +216,10 @@ function renderLensRows() {
         </select>
         <input type="text" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="orderLensesDraft[${i}].lens_name=this.value" style="padding:10px;font-size:16px;width:100%;">
         <button type="button" onclick="removeLensRow(${i})" style="color:#C0392B;padding:6px;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input type="text" placeholder="indeks (npr. 1.6)" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" style="padding:10px;font-size:16px;">
+        <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
         <input type="text" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
@@ -232,7 +243,7 @@ function removeFrameRow(i) {
 }
 
 function addLensRow() {
-  orderLensesDraft.push({ purpose: PURPOSES[0], lens_name: '', price_unit: '', discount: '', qty: 2 });
+  orderLensesDraft.push({ purpose: PURPOSES[0], lens_name: '', lens_index: '', lens_coating: '', price_unit: '', discount: '', qty: 2 });
   renderLensRows();
   updateOrderFormTotal();
 }
@@ -243,16 +254,28 @@ function removeLensRow(i) {
   updateOrderFormTotal();
 }
 
-// Učitava sve nazive stakala koji su ikad uneti (kod bilo kog pacijenta) i puni
-// <datalist> da se pri kliku/kucanju u polje "naziv stakla" odmah nudi izbor
-// iz istorije — ne treba svaki put ponovo kucati isti naziv.
+// Učitava sve vrednosti naziva/indeksa/premaza stakala koje su ikad unete (kod bilo kog
+// pacijenta) i puni <datalist> elemente da se pri kliku/kucanju odmah nudi izbor iz
+// istorije — ne treba svaki put ponovo kucati iste vrednosti.
 async function loadLensAutocompleteData() {
-  const { data } = await sb.from('order_lenses').select('lens_name').limit(3000);
-  const names = new Set();
-  (data || []).forEach(r => { if (r.lens_name) names.add(r.lens_name.trim()); });
+  const { data } = await sb.from('order_lenses').select('lens_name, lens_index, lens_coating').limit(3000);
+  const names = new Set(), indexes = new Set(), coatings = new Set();
+  (data || []).forEach(r => {
+    if (r.lens_name) names.add(r.lens_name.trim());
+    if (r.lens_index) indexes.add(r.lens_index.trim());
+    if (r.lens_coating) coatings.add(r.lens_coating.trim());
+  });
   knownLensNames = [...names].sort((a, b) => a.localeCompare(b, 'sr'));
-  const list = document.getElementById('lens-name-list');
-  if (list) list.innerHTML = knownLensNames.map(v => `<option value="${v.replace(/"/g, '&quot;')}"></option>`).join('');
+  knownLensIndexes = [...indexes].sort((a, b) => a.localeCompare(b, 'sr'));
+  knownLensCoatings = [...coatings].sort((a, b) => a.localeCompare(b, 'sr'));
+
+  const esc = v => v.replace(/"/g, '&quot;');
+  const nameList = document.getElementById('lens-name-list');
+  if (nameList) nameList.innerHTML = knownLensNames.map(v => `<option value="${esc(v)}"></option>`).join('');
+  const idxList = document.getElementById('lens-index-list');
+  if (idxList) idxList.innerHTML = knownLensIndexes.map(v => `<option value="${esc(v)}"></option>`).join('');
+  const coatList = document.getElementById('lens-coating-list');
+  if (coatList) coatList.innerHTML = knownLensCoatings.map(v => `<option value="${esc(v)}"></option>`).join('');
 }
 
 // Dodaje po jedan red okvira i stakala za datu namenu, ali samo ako takva namena
@@ -263,7 +286,7 @@ function ensureFrameAndLensForPurpose(purpose) {
     orderFramesDraft.push({ purpose, frame_code: '', is_client: false, price: '' });
   }
   if (!orderLensesDraft.some(l => l.purpose === purpose)) {
-    orderLensesDraft.push({ purpose, lens_name: '', price_unit: '', discount: '', qty: 2 });
+    orderLensesDraft.push({ purpose, lens_name: '', lens_index: '', lens_coating: '', price_unit: '', discount: '', qty: 2 });
   }
 }
 
@@ -522,6 +545,7 @@ async function saveOrderForm(e) {
     if (orderLensesDraft.length) {
       await sb.from('order_lenses').insert(orderLensesDraft.map(l => ({
         order_id: savedId, purpose: l.purpose, lens_name: l.lens_name || null,
+        lens_index: l.lens_index || null, lens_coating: l.lens_coating || null,
         price_unit: Number(l.price_unit) || 0, discount: Number(l.discount) || 0, qty: Number(l.qty) || 1,
       })));
     }
