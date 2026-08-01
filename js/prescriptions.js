@@ -121,9 +121,17 @@ async function savePrescriptionForm(e) {
 
   if (savedId && confirm('Recept sačuvan. Da li odmah unosite porudžbinu?')) {
     await switchTab('orders');
-    await openAddOrderModal();
+    // pendingQuickAddDate (ako postoji) prenosi datum pacijenta u formu porudžbine;
+    // openAddOrderModal ga sam resetuje nakon upotrebe.
+    await openAddOrderModal(pendingQuickAddDate);
     orderPrescriptionsDraft = [savedId];
+    ensureFrameAndLensForPurpose(purpose);
     renderPrescriptionRows();
+    renderFrameRows();
+    renderLensRows();
+    updateOrderFormTotal();
+  } else {
+    pendingQuickAddDate = null;
   }
 }
 
