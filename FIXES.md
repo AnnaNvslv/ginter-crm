@@ -69,13 +69,35 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 
 Запушено: `crm.html`, `js/orders.js`, `js/prescriptions.js`.
 
-## 2026-08-01
+## 2026-08-01 (часть 1 — без изменений схемы БД)
 - **Список пациентов**: отображение имени изменено на "Фамилия Имя" (было "Имя Фамилия") — теперь совпадает с сортировкой по фамилии, легче искать глазами. Затронуло и заголовок карточки пациента (`fullName()` в `js/patients.js`)
 - **Модалки (Pacijent / Recept / Porudžbina)**:
   - При открытии popup курсор теперь сразу ставится в первое поле формы — не нужно кликать мышкой (`openModal()` в `js/utils.js`)
   - Enter в текстовом поле/select больше не сохраняет и не закрывает форму — переводит фокус на следующее поле. На последнем поле Enter фокусирует кнопку "Sačuvaj" (повторный Enter уже сохраняет). Textarea и кнопки ведут себя как обычно (перенос строки / клик) — новая функция `initEnterNavigation()` в `js/utils.js`, работает и для динамически добавляемых полей (окна/стёкла/рецепты/рассрочка в форме заказа)
 
 Запушено: `js/patients.js`, `js/utils.js`.
+
+## 2026-08-01 (часть 2 — без изменений схемы БД)
+- **Datum se prenosi kroz lanac Pacijent → Recept → Porudžbina**: ako se odmah nakon kreiranja NOVOG pacijenta unosi recept i porudžbina (bez zatvaranja kartice), datum porudžbine se automatski postavlja na datum posete koji je unet za pacijenta (umesto na današnji datum) — korisno kad se unosi puno starih pacijenata odjednom, ne treba svaki put ponovo kucati datum. Čim se otvori pacijent koji već postoji i doda mu se recept/porudžbina posebno (ne odmah nakon kreiranja), datum je uvek današnji. Mehanizam: promenljiva `pendingQuickAddDate` u `js/patients.js`, postavlja se samo pri kreiranju novog pacijenta, prosleđuje se kroz `savePrescriptionForm()` → `openAddOrderModal(dateOverride)`, i briše se čim se iskoristi ili ako se lanac prekine (Otkaži na receptu, odustajanje od porudžbine)
+  - ⚠️ Datum RECEPTA se još uvek ne može ručno menjati (nema polja u formi) — recept i dalje pokazuje `created_at` (vreme unosa). Da bi i recept nasledio datum pacijenta (i da bi se mogao ručno zadati za stare preglede), potrebna je nova kolona — vidi SQL ispod
+- **Porudžbina — okvir/stakla prate namenu recepta**: kad se doda ili promeni recept u polju "Povezati recept(e)", odmah se dodaje (ili prebacuje na novu namenu) po jedan red okvira i jedan red stakala sa istom namenom — ne treba ručno klikati "+ Dodaj okvir"/"+ Dodaj stakla" i birati namenu. Ako više recepata i dalje koristi staru namenu, taj okvir/stakla se ne diraju (`js/orders.js`: `ensureFrameAndLensForPurpose()`, `updatePrescriptionRow()`)
+
+Запушено: `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `crm.html`.
+
+## ⏳ Čeka SQL (Anna treba da pokrene u Supabase SQL Editoru) — popust na porudžbinu i datum recepta
+
+```sql
+-- Popust na celu porudžbinu (procenat, 0–100)
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent numeric(5,2) NOT NULL DEFAULT 0;
+
+-- Datum recepta koji korisnik može ručno da unese/promeni
+-- (odvojeno od created_at, koji ostaje kao pravo vreme unosa u sistem)
+ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS rx_date date NOT NULL DEFAULT CURRENT_DATE;
+```
+
+Nakon što se ovaj SQL pokrene, sledi:
+- Polje "Datum recepta" u formi recepta — nasleđuje `pendingQuickAddDate` u lancu Pacijent→Recept, inače današnji datum
+- Polje "Popust na porudžbinu (%)" u formi porudžbine — primenjuje se na ukupan iznos (okviri+stakla+izrada, ili kontaktna sočiva), utiče na "Ostalo za uplatu" i na `total_amount` koji se koristi u tabelama Porudžbine/Dugovanja
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
