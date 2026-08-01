@@ -1,6 +1,10 @@
 let currentPatients = [];
 let activePatientId = null;
 let activeTab = 'prescriptions';
+// Datum novog pacijenta koji se automatski prenosi u recept i porudžbinu
+// ako se dodaju odmah nakon kreiranja pacijenta (bez potrebe da se datum unosi ponovo).
+// Postavlja se samo u tom lancu i nestaje čim se iskoristi ili lanac prekine.
+let pendingQuickAddDate = null;
 
 async function loadPatients() {
   const { data, error } = await sb
@@ -195,6 +199,7 @@ async function savePatientForm(e) {
   await loadPatients();
 
   if (savedId) {
+    if (!id) pendingQuickAddDate = payload.visit_date;
     await openPatient(savedId);
     if (!id) {
       await switchTab('prescriptions');
