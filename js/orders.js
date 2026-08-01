@@ -236,6 +236,18 @@ function removeLensRow(i) {
   updateOrderFormTotal();
 }
 
+// Dodaje po jedan red okvira i stakala za datu namenu, ali samo ako takva namena
+// tu još ne postoji (da ne dupliramo redove koje je korisnik već ručno dodao).
+function ensureFrameAndLensForPurpose(purpose) {
+  if (!purpose) return;
+  if (!orderFramesDraft.some(f => f.purpose === purpose)) {
+    orderFramesDraft.push({ purpose, frame_code: '', is_client: false, price: '' });
+  }
+  if (!orderLensesDraft.some(l => l.purpose === purpose)) {
+    orderLensesDraft.push({ purpose, lens_name: '', price_unit: '', discount: '', qty: 2 });
+  }
+}
+
 function rxSummaryLine(rx) {
   const od = [rx.od_sph, rx.od_cyl, rx.od_ax].filter(Boolean).join('/') || '—';
   const os = [rx.os_sph, rx.os_cyl, rx.os_ax].filter(Boolean).join('/') || '—';
@@ -258,7 +270,7 @@ function renderPrescriptionRows() {
   }
   wrap.innerHTML = orderPrescriptionsDraft.map((rxId, i) => `
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-      <select onchange="orderPrescriptionsDraft[${i}]=this.value" style="flex:1;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
+      <select onchange="updatePrescriptionRow(${i}, this.value)" style="flex:1;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
         ${currentPrescriptionsForOrder.map(rx => `<option value="${rx.id}" ${rx.id === rxId ? 'selected' : ''}>${rxOptionLabel(rx)}</option>`).join('')}
       </select>
       <button type="button" onclick="removePrescriptionRow(${i})" style="color:#C0392B;padding:6px;">×</button>
@@ -266,12 +278,45 @@ function renderPrescriptionRows() {
   `).join('') || '<div style="color:var(--text-light);font-size:15px;">Nijedan recept nije povezan</div>';
 }
 
+// Kad se doda recept u porudžbinu, odmah se otvara po jedan red okvira i stakala
+// sa istom namenom (npr. birate "za računar" recept — okvir i stakla se odmah
+// postave na "za računar"), da ne treba ručno da se dodaju i podešavaju.
 function addPrescriptionRow() {
   if (!currentPrescriptionsForOrder.length) { toast('Pacijent nema recepata', true); return; }
   const used = new Set(orderPrescriptionsDraft);
   const next = currentPrescriptionsForOrder.find(rx => !used.has(rx.id)) || currentPrescriptionsForOrder[0];
   orderPrescriptionsDraft.push(next.id);
+  ensureFrameAndLensForPurpose(next.purpose);
   renderPrescriptionRows();
+  renderFrameRows();
+  renderLensRows();
+  updateOrderFormTotal();
+}
+
+// Kad se promeni izbor recepta u postojećem redu, prebacuje odgovarajući okvir/stakla
+// (ako nijedan drugi izabrani recept i dalje ne treba staru namenu) na novu namenu,
+// i garantuje da za novu namenu postoji bar jedan red okvira i jedan red stakala.
+function updatePrescriptionRow(i, newRxId) {
+  const oldRx = currentPrescriptionsForOrder.find(rx => rx.id === orderPrescriptionsDraft[i]);
+  const newRx = currentPrescriptionsForOrder.find(rx => rx.id === newRxId);
+  orderPrescriptionsDraft[i] = newRxId;
+
+  if (oldRx && newRx && oldRx.purpose !== newRx.purpose) {
+    const stillNeedsOld = orderPrescriptionsDraft.some((id, idx) =>
+      idx !== i && currentPrescriptionsForOrder.find(r => r.id === id)?.purpose === oldRx.purpose
+    );
+    if (!stillNeedsOld) {
+      const f = orderFramesDraft.find(f => f.purpose === oldRx.purpose);
+      if (f) f.purpose = newRx.purpose;
+      const l = orderLensesDraft.find(l => l.purpose === oldRx.purpose);
+      if (l) l.purpose = newRx.purpose;
+    }
+  }
+  if (newRx) ensureFrameAndLensForPurpose(newRx.purpose);
+
+  renderFrameRows();
+  renderLensRows();
+  updateOrderFormTotal();
 }
 
 function removePrescriptionRow(i) {
@@ -305,11 +350,15 @@ function updateOrderFormTotal() {
   if (elRemaining) elRemaining.textContent = fmtMoney(remaining);
 }
 
-async function openAddOrderModal() {
+// dateOverride: kada se porudžbina otvara odmah nakon kreiranja novog pacijenta
+// (lanac Pacijent → Recept → Porudžbina), prosleđuje se datum posete pacijenta
+// umesto današnjeg datuma. Van tog lanca uvek je današnji datum.
+async function openAddOrderModal(dateOverride) {
   document.getElementById('order-modal-title').textContent = 'Nova porudžbina';
   document.getElementById('order-form').reset();
   document.getElementById('order-form-id').value = '';
-  document.getElementById('order-form-date').value = todayISO();
+  document.getElementById('order-form-date').value = dateOverride || todayISO();
+  pendingQuickAddDate = null;
   orderFramesDraft = [];
   orderLensesDraft = [];
   orderPrescriptionsDraft = [];
