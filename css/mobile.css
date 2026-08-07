@@ -1,0 +1,93 @@
+.mobile-back-btn { display: none; }
+
+@media (max-width: 768px) {
+  body { font-size: 16px; }
+
+  input, button, select, textarea { font-size: 16px; }
+
+  /* Topnav */
+  .topnav {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 10px 14px;
+  }
+  .topnav-left { width: 100%; flex-wrap: wrap; }
+  .topnav h1 { font-size: 17px; margin-right: 16px; margin-bottom: 4px; }
+  .nav-tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-tab { padding: 0 12px; font-size: 14px; white-space: nowrap; }
+  .topnav-user { width: 100%; justify-content: space-between; font-size: 13px; }
+  .topnav-user-label { display: none; }
+  .topnav-user .btn-secondary { padding: 8px 16px; font-size: 14px; }
+
+  /* Klijenti: lista / kartica pacijenta kao dva ekrana */
+  #section-clients .sidebar {
+    width: 100%;
+    border-right: none;
+  }
+  #section-clients .main { display: none; }
+  #section-clients.show-detail .sidebar { display: none; }
+  #section-clients.show-detail .main { display: flex; }
+
+  .mobile-back-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .content, .full-view { padding: 16px; }
+
+  .patient-item .visit { display: none; }
+  .letter-index { width: 20px; }
+
+  /* Kartica pacijenta */
+  .card-header { flex-direction: column; align-items: stretch; gap: 12px; }
+  .card-header .badges { flex-wrap: wrap; }
+  .card-header > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+  .card-header > div:last-child button { flex: 1 1 auto; padding: 12px 14px; font-size: 15px; }
+  .card-header h2 { font-size: 22px; }
+
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 10px 14px; font-size: 15px; white-space: nowrap; }
+
+  /* Forme */
+  .field-grid { grid-template-columns: 1fr; gap: 12px; }
+  .rx-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  .filters-row { flex-direction: column; }
+  .filters-row input { max-width: 100%; }
+
+  /* Tabele — horizontalni skrol */
+  #orders-table-wrap, #exams-table-wrap, #debts-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .data-table { min-width: 640px; }
+
+  /* Modali na pun ekran */
+  .modal-overlay { padding: 0; }
+  .modal {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    padding: 20px 16px 24px;
+  }
+  .modal h3 { font-size: 19px; }
+  .modal-close { top: 14px; right: 14px; }
+
+  .type-toggle button { padding: 12px; font-size: 15px; }
+
+  .checkbox-row label { font-size: 15px; }
+}
