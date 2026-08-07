@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/crm.css">
+<link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
 
@@ -23,7 +24,7 @@
       </div>
     </div>
     <div class="topnav-user">
-      Prijavljeni ste kao <b id="current-user-name"></b>
+      <span class="topnav-user-label">Prijavljeni ste kao <b id="current-user-name"></b></span>
       <button class="btn-secondary" onclick="logout()">Odjava</button>
     </div>
   </div>
@@ -40,6 +41,7 @@
       </div>
     </div>
     <div class="main">
+      <button type="button" class="mobile-back-btn" onclick="showPatientList()">‹ Nazad na listu</button>
       <div class="content" id="content">
         <div class="empty-state">Izaberite pacijenta sa leve strane</div>
       </div>
