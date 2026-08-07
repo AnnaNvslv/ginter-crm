@@ -79,7 +79,12 @@ async function openPatient(id) {
   activePatientId = id;
   activeTab = 'prescriptions';
   renderPatientList(document.getElementById('search-input').value);
+  document.getElementById('section-clients').classList.add('show-detail');
   await renderPatientCard();
+}
+
+function showPatientList() {
+  document.getElementById('section-clients').classList.remove('show-detail');
 }
 
 async function renderPatientCard() {
@@ -224,6 +229,7 @@ async function deletePatient() {
   if (error) { toast('Greška pri brisanju', true); return; }
   activePatientId = null;
   document.getElementById('content').innerHTML = '<div class="empty-state">Izaberite pacijenta sa leve strane</div>';
+  showPatientList();
   toast('Pacijent obrisan');
   await loadPatients();
 }
