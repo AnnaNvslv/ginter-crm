@@ -58,6 +58,12 @@ async function renderOrdersTab() {
   document.getElementById('tab-content').innerHTML = html;
 }
 
+function applyDiscount(total, percent) {
+  const p = Number(percent) || 0;
+  if (!p) return Math.round(total);
+  return Math.round(total - (total * p / 100));
+}
+
 function calcGlassesTotal(frames, lenses) {
   const framesTotal = frames.reduce((sum, f) => sum + (f.is_client ? 0 : Number(f.price) || 0), 0);
   const lensesTotal = lenses.reduce((sum, l) => sum + lensTotal(l.price_unit, l.discount, l.qty), 0);
@@ -82,7 +88,9 @@ function rxDetailLines(rx) {
 function renderOrderCard(o, frames, lenses, installments, rxLinks) {
   const isGlasses = o.order_type === 'glasses';
   const izrada = Number(o.izrada_price) || 0;
-  const total = isGlasses ? calcGlassesTotal(frames, lenses) + izrada : clTotal(o.cl_price, o.cl_qty);
+  const subtotal = isGlasses ? calcGlassesTotal(frames, lenses) + izrada : clTotal(o.cl_price, o.cl_qty);
+  const discountPercent = Number(o.discount_percent) || 0;
+  const total = discountPercent ? applyDiscount(subtotal, discountPercent) : subtotal;
   const paidViaInstallments = installments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const remaining = total - (Number(o.prepayment) || 0) - paidViaInstallments;
 
@@ -135,6 +143,10 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks) {
         </div>
       `}
       <div class="total-box">
+        ${discountPercent ? `
+        <div class="row" style="font-size:15px;color:var(--text-light);"><span>Cena pre popusta</span><span>${fmtMoney(subtotal)}</span></div>
+        <div class="row" style="font-size:15px;color:var(--text-light);"><span>Popust ${discountPercent}%</span><span>-${fmtMoney(subtotal - total)}</span></div>
+        ` : ''}
         <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:22px;font-weight:700;color:var(--accent);padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border);">
           <span>Ukupno</span><span>${fmtMoney(total)}</span>
         </div>
@@ -403,15 +415,17 @@ async function populatePrescriptionOptions() {
 }
 
 function updateOrderFormTotal() {
-  let total;
+  let subtotal;
   if (orderFormType === 'glasses') {
     const izrada = Number(document.getElementById('order-form-izrada')?.value) || 0;
-    total = calcGlassesTotal(orderFramesDraft, orderLensesDraft) + izrada;
+    subtotal = calcGlassesTotal(orderFramesDraft, orderLensesDraft) + izrada;
   } else {
     const price = Number(document.getElementById('order-form-cl-price')?.value) || 0;
     const qty = Number(document.getElementById('order-form-cl-qty')?.value) || 0;
-    total = clTotal(price, qty);
+    subtotal = clTotal(price, qty);
   }
+  const discountPercent = Number(document.getElementById('order-form-discount')?.value) || 0;
+  const total = applyDiscount(subtotal, discountPercent);
   const prepayment = Number(document.getElementById('order-form-prepayment')?.value) || 0;
   const remaining = total - prepayment;
 
@@ -463,6 +477,7 @@ async function openEditOrderModal(id) {
   document.getElementById('order-form-prepayment').value = o.prepayment || '';
   document.getElementById('order-form-payment-method').value = o.payment_method || '';
   document.getElementById('order-form-izrada').value = o.izrada_price || '';
+  document.getElementById('order-form-discount').value = o.discount_percent || '';
 
   const [framesRes, lensesRes, opRes] = await Promise.all([
     sb.from('order_frames').select('*').eq('order_id', id),
@@ -545,12 +560,14 @@ async function saveOrderForm(e) {
     prepayment: Number(document.getElementById('order-form-prepayment').value) || 0,
     payment_method: document.getElementById('order-form-payment-method').value || null,
     has_installment: document.getElementById('order-form-installment').checked,
+    discount_percent: Number(document.getElementById('order-form-discount').value) || 0,
     comment: document.getElementById('order-form-comment').value.trim() || null,
   };
 
   if (orderFormType === 'glasses') {
     payload.izrada_price = Number(document.getElementById('order-form-izrada').value) || 0;
-    payload.total_amount = calcGlassesTotal(orderFramesDraft, orderLensesDraft) + payload.izrada_price;
+    const subtotal = calcGlassesTotal(orderFramesDraft, orderLensesDraft) + payload.izrada_price;
+    payload.total_amount = applyDiscount(subtotal, payload.discount_percent);
   } else {
     payload.cl_name = document.getElementById('order-form-cl-name').value.trim() || null;
     payload.cl_bc = document.getElementById('order-form-cl-bc').value || null;
@@ -558,7 +575,8 @@ async function saveOrderForm(e) {
     payload.cl_replacement_period = document.getElementById('order-form-cl-period').value.trim() || null;
     payload.cl_price = Number(document.getElementById('order-form-cl-price').value) || 0;
     payload.cl_qty = Number(document.getElementById('order-form-cl-qty').value) || 1;
-    payload.total_amount = clTotal(payload.cl_price, payload.cl_qty);
+    const subtotal = clTotal(payload.cl_price, payload.cl_qty);
+    payload.total_amount = applyDiscount(subtotal, payload.discount_percent);
   }
 
   let error, savedId = id;
