@@ -1,4 +1,5 @@
 let currentPrescriptions = [];
+let rxChain = []; // { id, purpose } recepata sačuvanih preko "+ Dodaj još recept" u trenutnoj sesiji unosa
 
 async function renderPrescriptionsTab() {
   const { data, error } = await sb
@@ -68,39 +69,20 @@ function focusRxSphField() {
   }, 0);
 }
 
-function openAddPrescriptionModal() {
-  document.getElementById('rx-modal-title').textContent = 'Novi recept';
-  document.getElementById('rx-form').reset();
-  document.getElementById('rx-form-id').value = '';
-  toggleRxClFields();
-  openModal('rx-modal');
-  focusRxSphField();
+// Dugme "+ Dodaj još recept" je vidljivo samo pri unosu NOVOG recepta (ne pri izmeni
+// postojećeg) — izmena postojećeg recepta ne može biti deo lanca za novu porudžbinu.
+// Kratka napomena iznad forme pokazuje koliko je recepata već sačuvano u lancu.
+function updateRxChainUI() {
+  const isEdit = !!document.getElementById('rx-form-id').value;
+  const btn = document.getElementById('rx-add-another-btn');
+  if (btn) btn.style.display = isEdit ? 'none' : 'inline-block';
+  const info = document.getElementById('rx-chain-info');
+  if (info) info.textContent = rxChain.length ? `Već dodato u ovoj porudžbini: ${rxChain.length}` : '';
 }
 
-function openEditPrescriptionModal(id) {
-  const rx = currentPrescriptions.find(r => r.id === id);
-  document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
-  document.getElementById('rx-form-id').value = rx.id;
-  document.getElementById('rx-form-purpose').value = rx.purpose || 'za daljinu';
-  document.getElementById('rx-form-client').checked = rx.is_client_rx;
-  ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
-    document.getElementById(`rx-form-${f}`).value = rx[f] ?? '';
-  });
-  document.getElementById('rx-form-bc').value = rx.bc || '';
-  document.getElementById('rx-form-dia').value = rx.dia || '';
-  const checkedNames = (rx.checked_by || '').split(',').map(s => s.trim()).filter(Boolean);
-  ['Ervin', 'Anna', 'Bojana'].forEach(name => {
-    document.getElementById(`rx-form-checked-${name}`).checked = checkedNames.includes(name);
-  });
-  document.getElementById('rx-form-comment').value = rx.comment || '';
-  toggleRxClFields();
-  openModal('rx-modal');
-  focusRxSphField();
-}
-
-async function savePrescriptionForm(e) {
-  e.preventDefault();
-  const id = document.getElementById('rx-form-id').value;
+// Čita trenutna polja forme u payload za upis u bazu — koristi ga i "+ Dodaj još recept"
+// i normalno "Sačuvaj", da ne bi bilo duplirane logike.
+function buildRxFormPayload() {
   const purpose = document.getElementById('rx-form-purpose').value;
   const isCl = purpose === 'kontaktna sočiva';
 
@@ -121,6 +103,67 @@ async function savePrescriptionForm(e) {
     const v = document.getElementById(`rx-form-${f}`).value.trim();
     payload[f] = v || null;
   });
+  return payload;
+}
+
+function openAddPrescriptionModal() {
+  rxChain = [];
+  document.getElementById('rx-modal-title').textContent = 'Novi recept';
+  document.getElementById('rx-form').reset();
+  document.getElementById('rx-form-id').value = '';
+  toggleRxClFields();
+  updateRxChainUI();
+  openModal('rx-modal');
+  focusRxSphField();
+}
+
+function openEditPrescriptionModal(id) {
+  rxChain = [];
+  const rx = currentPrescriptions.find(r => r.id === id);
+  document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
+  document.getElementById('rx-form-id').value = rx.id;
+  document.getElementById('rx-form-purpose').value = rx.purpose || 'za daljinu';
+  document.getElementById('rx-form-client').checked = rx.is_client_rx;
+  ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
+    document.getElementById(`rx-form-${f}`).value = rx[f] ?? '';
+  });
+  document.getElementById('rx-form-bc').value = rx.bc || '';
+  document.getElementById('rx-form-dia').value = rx.dia || '';
+  const checkedNames = (rx.checked_by || '').split(',').map(s => s.trim()).filter(Boolean);
+  ['Ervin', 'Anna', 'Bojana'].forEach(name => {
+    document.getElementById(`rx-form-checked-${name}`).checked = checkedNames.includes(name);
+  });
+  document.getElementById('rx-form-comment').value = rx.comment || '';
+  toggleRxClFields();
+  updateRxChainUI();
+  openModal('rx-modal');
+  focusRxSphField();
+}
+
+// Snima trenutni recept (uvek kao nov, insert) i odmah otvara praznu formu za sledeći —
+// modal ostaje otvoren. Sačuvani recept se dodaje u rxChain i povezuje na porudžbinu
+// tek kad se lanac završi normalnim "Sačuvaj".
+async function saveAndAddAnotherPrescription() {
+  const payload = buildRxFormPayload();
+  payload.created_by = getCurrentUser()?.name || null;
+  const { data, error } = await sb.from('prescriptions').insert(payload).select('id').single();
+  if (error) { toast('Greška pri čuvanju recepta', true); return; }
+
+  rxChain.push({ id: data.id, purpose: payload.purpose });
+  toast('Recept sačuvan — unesite sledeći');
+
+  document.getElementById('rx-form').reset();
+  document.getElementById('rx-form-id').value = '';
+  toggleRxClFields();
+  updateRxChainUI();
+  focusRxSphField();
+}
+
+async function savePrescriptionForm(e) {
+  e.preventDefault();
+  const id = document.getElementById('rx-form-id').value;
+  const payload = buildRxFormPayload();
+  const purpose = payload.purpose;
 
   let error, savedId = id;
   if (id) {
@@ -137,15 +180,22 @@ async function savePrescriptionForm(e) {
   toast('Recept sačuvan');
   await renderPrescriptionsTab();
 
-  // Nakon svakog snimljenog recepta odmah se otvara forma porudžbine (bez pitanja) —
-  // recept se automatski povezuje, okvir/stakla za tu namenu se odmah dodaju.
-  if (savedId) {
+  // Sakupljamo sve recepte iz ovog lanca (dodate preko "+ Dodaj još recept"), zajedno
+  // sa upravo sačuvanim (poslednjim) — svi se odjednom povezuju na istu porudžbinu.
+  const chainIds = rxChain.map(r => r.id);
+  const chainPurposes = rxChain.map(r => r.purpose);
+  rxChain = [];
+  if (savedId) { chainIds.push(savedId); chainPurposes.push(purpose); }
+
+  // Nakon snimanja odmah se otvara forma porudžbine (bez pitanja) — svi recepti iz
+  // lanca se automatski povezuju, okvir/stakla za svaku namenu se odmah dodaju.
+  if (chainIds.length) {
     await switchTab('orders');
     // pendingQuickAddDate (ako postoji) prenosi datum pacijenta u formu porudžbine;
     // openAddOrderModal ga sam resetuje nakon upotrebe.
     await openAddOrderModal(pendingQuickAddDate);
-    orderPrescriptionsDraft = [savedId];
-    ensureFrameAndLensForPurpose(purpose);
+    orderPrescriptionsDraft = chainIds;
+    chainPurposes.forEach(p => ensureFrameAndLensForPurpose(p));
     renderPrescriptionRows();
     renderFrameRows();
     renderLensRows();
