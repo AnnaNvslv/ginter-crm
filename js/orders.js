@@ -18,6 +18,7 @@ async function renderOrdersTab() {
 
   if (error) { toast('Greška pri učitavanju porudžbina', true); return; }
   currentOrders = orders;
+  if (typeof updateTabCount === 'function') updateTabCount('orders', currentOrders.length);
 
   const orderIds = orders.map(o => o.id);
   let framesByOrder = {}, lensesByOrder = {}, installmentsByOrder = {}, rxByOrder = {};
