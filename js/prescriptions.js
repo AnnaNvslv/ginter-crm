@@ -88,7 +88,10 @@ function openEditPrescriptionModal(id) {
   });
   document.getElementById('rx-form-bc').value = rx.bc || '';
   document.getElementById('rx-form-dia').value = rx.dia || '';
-  document.getElementById('rx-form-checked-by').value = rx.checked_by || '';
+  const checkedNames = (rx.checked_by || '').split(',').map(s => s.trim()).filter(Boolean);
+  ['Ervin', 'Anna', 'Bojana'].forEach(name => {
+    document.getElementById(`rx-form-checked-${name}`).checked = checkedNames.includes(name);
+  });
   document.getElementById('rx-form-comment').value = rx.comment || '';
   toggleRxClFields();
   openModal('rx-modal');
@@ -101,13 +104,17 @@ async function savePrescriptionForm(e) {
   const purpose = document.getElementById('rx-form-purpose').value;
   const isCl = purpose === 'kontaktna sočiva';
 
+  const checkedBy = ['Ervin', 'Anna', 'Bojana']
+    .filter(name => document.getElementById(`rx-form-checked-${name}`).checked)
+    .join(', ') || null;
+
   const payload = {
     patient_id: activePatientId,
     purpose,
     is_client_rx: document.getElementById('rx-form-client').checked,
     bc: isCl ? (document.getElementById('rx-form-bc').value.trim() || null) : null,
     dia: isCl ? (document.getElementById('rx-form-dia').value.trim() || null) : null,
-    checked_by: document.getElementById('rx-form-checked-by').value || null,
+    checked_by: checkedBy,
     comment: document.getElementById('rx-form-comment').value.trim() || null,
   };
   ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
