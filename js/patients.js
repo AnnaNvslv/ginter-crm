@@ -196,22 +196,22 @@ function runDuplicateCheck() {
   const first = document.getElementById('patient-form-first-name').value.trim().toLowerCase();
   const last = document.getElementById('patient-form-last-name').value.trim().toLowerCase();
   const phone = normalizePhoneDigits(document.getElementById('patient-form-phone').value);
+  const nameTokens = (first + ' ' + last).split(/\s+/).filter(t => t.length >= 2);
 
   const box = document.getElementById('patient-dup-warning');
   const list = document.getElementById('patient-dup-list');
 
-  const nameFilled = first.length >= 2 && last.length >= 2;
-  const phoneFilled = phone.length >= 6;
+  const nameFilled = nameTokens.length > 0;
+  const phoneFilled = phone.length >= 4;
 
   if (!nameFilled && !phoneFilled) { hideDupWarning(); return; }
 
   const matches = currentPatients.filter(p => {
     if (p.id === editingId) return false;
-    const pFirst = (p.first_name || '').trim().toLowerCase();
-    const pLast = (p.last_name || '').trim().toLowerCase();
+    const pName = fullName(p).toLowerCase();
     const pPhone = normalizePhoneDigits(p.phone);
-    const nameMatch = nameFilled && pFirst === first && pLast === last;
-    const phoneMatch = phoneFilled && pPhone && pPhone === phone;
+    const nameMatch = nameFilled && nameTokens.every(t => pName.includes(t));
+    const phoneMatch = phoneFilled && pPhone && (pPhone.includes(phone) || phone.includes(pPhone));
     return nameMatch || phoneMatch;
   });
 
