@@ -117,6 +117,14 @@ Anna je primetila da je istorija `order_lenses` puna neujednačenih unosa (mnogo
 
 Запушено: `crm.html`, `js/orders.js`.
 
+## 2026-08-08 (recept — lanac "Dodaj još recept")
+- **Modal Recepta**: novo dugme "+ Dodaj još recept" pored "Otkaži"/"Sačuvaj" — klikom se trenutni recept odmah snima (insert), forma se prazni i ostaje otvorena za unos sledećeg recepta. Iznad forme se pojavljuje napomena "Već dodato u ovoj porudžbini: N". Dugme je vidljivo samo pri unosu NOVOG recepta — sakriveno pri izmeni postojećeg (`js/prescriptions.js`: `saveAndAddAnotherPrescription()`, `updateRxChainUI()`, `rxChain` niz)
+- Kad se lanac završi normalnim "Sačuvaj" (poslednji recept), **svi** recepti iz lanca (uključujući poslednji) se odjednom povezuju na novu porudžbinu — forma porudžbine se otvara sa svim njima u "Povezati recept(e)", i za svaku njihovu namenu se odmah dodaje po jedan red okvira i stakala (`savePrescriptionForm()`)
+- Datum porudžbine i dalje prati postojeći mehanizam `pendingQuickAddDate` (prva uneta poseta pacijenta) — lanac recepata ga ne dira, briše se tek kad se otvori forma porudžbine
+- Zatvaranje modala (Otkaži / × / Esc) u sred lanca odbacuje samo trenutnu (nesačuvanu) formu — recepti već sačuvani preko "+ Dodaj još recept" ostaju u bazi, ali se ne povežu automatski ni sa jednom porudžbinom (ostaju kao obični recepti pacijenta, mogu se ručno povezati kroz "Povezati recept(e)" u formi porudžbine)
+
+Запушено: `crm.html`, `js/prescriptions.js`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
