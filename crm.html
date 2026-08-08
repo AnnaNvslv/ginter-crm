@@ -132,6 +132,7 @@
   <div class="modal">
     <button type="button" class="modal-close" onclick="closeModal('rx-modal'); pendingQuickAddDate=null;" aria-label="Zatvori">&times;</button>
     <h3 id="rx-modal-title">Novi recept</h3>
+    <div id="rx-chain-info" style="color:var(--text-light);font-size:14px;margin-bottom:12px;"></div>
     <form id="rx-form" onsubmit="savePrescriptionForm(event)">
       <input type="hidden" id="rx-form-id">
       <label>Namena</label>
@@ -193,6 +194,7 @@
 
       <div class="modal-actions">
         <button type="button" class="btn-secondary" onclick="closeModal('rx-modal'); pendingQuickAddDate=null;">Otkaži</button>
+        <button type="button" id="rx-add-another-btn" class="btn-secondary" onclick="saveAndAddAnotherPrescription()">+ Dodaj još recept</button>
         <button type="submit" class="btn-primary">Sačuvaj</button>
       </div>
     </form>
