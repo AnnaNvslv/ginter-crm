@@ -125,6 +125,13 @@ Anna je primetila da je istorija `order_lenses` puna neujednačenih unosa (mnogo
 
 Запушено: `crm.html`, `js/prescriptions.js`.
 
+## 2026-08-08 (brojevi na tabovima Recepti/Porudžbine)
+- Tabovi u kartici pacijenta sada pokazuju broj recepata i broj (nepobrisanih) porudžbina u sivom "pilulastom" bedžu pored naziva — npr. "Recepti 3", "Porudžbine 0" (`js/patients.js`: `countPatientPrescriptions()`, `countPatientOrders()` u `renderPatientCard()`)
+- Brojevi se ažuriraju uživo posle svake izmene (dodavanje/brisanje recepta ili porudžbine, uključujući lanac "Dodaj još recept") — `renderPrescriptionsTab()` i `renderOrdersTab()` pozivaju `updateTabCount()` posle svakog učitavanja liste, bez potrebe za ponovnim otvaranjem kartice pacijenta
+- CSS: `.tab-count` (neutralna siva pilula, na aktivnom tabu postaje plava) — odvojeno od `.nav-tab .count-badge` (crveni bedž za dugovanja na gornjoj navigaciji), da se brojevi recepata/porudžbina ne mešaju vizuelno sa upozorenjem o dugu
+
+Запушено: `crm.html`, `css/crm.css`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
