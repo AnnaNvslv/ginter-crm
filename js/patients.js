@@ -92,6 +92,11 @@ async function renderPatientCard() {
   const patient = currentPatients.find(p => p.id === activePatientId);
   if (!patient) return;
 
+  const [rxCount, orderCount] = await Promise.all([
+    countPatientPrescriptions(patient.id),
+    countPatientOrders(patient.id),
+  ]);
+
   const content = document.getElementById('content');
   content.innerHTML = `
     <div class="card-header">
@@ -112,8 +117,8 @@ async function renderPatientCard() {
     </div>
 
     <div class="tabs">
-      <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" data-tab="prescriptions" onclick="switchTab('prescriptions')">Recepti</div>
-      <div class="tab ${activeTab === 'orders' ? 'active' : ''}" data-tab="orders" onclick="switchTab('orders')">Porudžbine</div>
+      <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" data-tab="prescriptions" onclick="switchTab('prescriptions')">Recepti <span class="tab-count" id="tab-count-prescriptions">${rxCount}</span></div>
+      <div class="tab ${activeTab === 'orders' ? 'active' : ''}" data-tab="orders" onclick="switchTab('orders')">Porudžbine <span class="tab-count" id="tab-count-orders">${orderCount}</span></div>
       <div class="tab ${activeTab === 'info' ? 'active' : ''}" data-tab="info" onclick="switchTab('info')">Info</div>
     </div>
 
@@ -121,6 +126,24 @@ async function renderPatientCard() {
   `;
 
   await renderActiveTab();
+}
+
+async function countPatientPrescriptions(patientId) {
+  const { count, error } = await sb.from('prescriptions').select('id', { count: 'exact', head: true }).eq('patient_id', patientId);
+  return error ? 0 : (count || 0);
+}
+
+async function countPatientOrders(patientId) {
+  const { count, error } = await sb.from('orders').select('id', { count: 'exact', head: true }).eq('patient_id', patientId).is('deleted_at', null);
+  return error ? 0 : (count || 0);
+}
+
+// Ažurira brojeve na tabovima Recepti/Porudžbine bez ponovnog renderovanja cele kartice —
+// pozivaju ga renderPrescriptionsTab() i renderOrdersTab() nakon svakog učitavanja liste,
+// da brojevi ostanu tačni posle dodavanja/brisanja bez potrebe za ponovnim otvaranjem pacijenta.
+function updateTabCount(tab, value) {
+  const el = document.getElementById(`tab-count-${tab}`);
+  if (el) el.textContent = value;
 }
 
 async function switchTab(tab) {
