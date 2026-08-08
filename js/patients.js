@@ -5,6 +5,7 @@ let activeTab = 'prescriptions';
 // ako se dodaju odmah nakon kreiranja pacijenta (bez potrebe da se datum unosi ponovo).
 // Postavlja se samo u tom lancu i nestaje čim se iskoristi ili lanac prekine.
 let pendingQuickAddDate = null;
+let dupCheckTimer = null;
 
 async function loadPatients() {
   const { data, error } = await sb
@@ -156,6 +157,7 @@ function openAddPatientModal() {
   document.getElementById('patient-form').reset();
   document.getElementById('patient-form-id').value = '';
   document.getElementById('patient-form-visit-date').value = todayISO();
+  hideDupWarning();
   openModal('patient-modal');
 }
 
@@ -170,7 +172,66 @@ function openEditPatientModal() {
   document.getElementById('patient-form-phone').value = patient.phone || '';
   document.getElementById('patient-form-visit-date').value = patient.visit_date || todayISO();
   document.getElementById('patient-form-notes').value = patient.notes || '';
+  hideDupWarning();
   openModal('patient-modal');
+}
+
+// ═══ PROVERA DUPLIH PACIJENATA ═══
+function normalizePhoneDigits(s) {
+  return (s || '').replace(/\D/g, '');
+}
+
+function checkDuplicatePatient() {
+  clearTimeout(dupCheckTimer);
+  dupCheckTimer = setTimeout(runDuplicateCheck, 250);
+}
+
+function hideDupWarning() {
+  const box = document.getElementById('patient-dup-warning');
+  if (box) box.style.display = 'none';
+}
+
+function runDuplicateCheck() {
+  const editingId = document.getElementById('patient-form-id').value;
+  const first = document.getElementById('patient-form-first-name').value.trim().toLowerCase();
+  const last = document.getElementById('patient-form-last-name').value.trim().toLowerCase();
+  const phone = normalizePhoneDigits(document.getElementById('patient-form-phone').value);
+
+  const box = document.getElementById('patient-dup-warning');
+  const list = document.getElementById('patient-dup-list');
+
+  const nameFilled = first.length >= 2 && last.length >= 2;
+  const phoneFilled = phone.length >= 6;
+
+  if (!nameFilled && !phoneFilled) { hideDupWarning(); return; }
+
+  const matches = currentPatients.filter(p => {
+    if (p.id === editingId) return false;
+    const pFirst = (p.first_name || '').trim().toLowerCase();
+    const pLast = (p.last_name || '').trim().toLowerCase();
+    const pPhone = normalizePhoneDigits(p.phone);
+    const nameMatch = nameFilled && pFirst === first && pLast === last;
+    const phoneMatch = phoneFilled && pPhone && pPhone === phone;
+    return nameMatch || phoneMatch;
+  });
+
+  if (!matches.length) { hideDupWarning(); return; }
+
+  list.innerHTML = matches.map(p => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);cursor:pointer;" onclick="useDuplicatePatient('${p.id}')">
+      <div>
+        <div style="font-weight:600;">${fullName(p)}</div>
+        <div style="font-size:13px;color:var(--text-light);">${p.phone || 'bez telefona'}${p.age ? ' · ' + p.age + ' god.' : ''}</div>
+      </div>
+      <span style="color:var(--accent);font-size:14px;white-space:nowrap;">Otvori karticu →</span>
+    </div>
+  `).join('');
+  box.style.display = 'block';
+}
+
+function useDuplicatePatient(id) {
+  closeModal('patient-modal');
+  openPatient(id);
 }
 
 async function savePatientForm(e) {
