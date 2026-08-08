@@ -68,6 +68,17 @@ function lensDescriptor(l) {
   return [l.lens_name || '—', l.lens_index, l.lens_coating].filter(Boolean).join(' · ');
 }
 
+// Detaljan prikaz recepta po redovima (OD, OS, PD, BC/DIA) za karticu porudžbine —
+// čitljivije od jednorednog sažetka koji se koristi u padajućim listama (rxSummaryLine).
+function rxDetailLines(rx) {
+  const odParts = [rx.od_sph && `Sph ${rx.od_sph}`, rx.od_cyl && `Cyl ${rx.od_cyl}`, rx.od_ax && `Ax ${rx.od_ax}`].filter(Boolean);
+  const osParts = [rx.os_sph && `Sph ${rx.os_sph}`, rx.os_cyl && `Cyl ${rx.os_cyl}`, rx.os_ax && `Ax ${rx.os_ax}`].filter(Boolean);
+  let lines = `<div>OD: ${odParts.join(' · ') || '—'}</div><div>OS: ${osParts.join(' · ') || '—'}</div>`;
+  if (rx.pd) lines += `<div>PD: ${rx.pd}</div>`;
+  if (rx.purpose === 'kontaktna sočiva' && (rx.bc || rx.dia)) lines += `<div>BC: ${rx.bc || '—'} · DIA: ${rx.dia || '—'}</div>`;
+  return lines;
+}
+
 function renderOrderCard(o, frames, lenses, installments, rxLinks) {
   const isGlasses = o.order_type === 'glasses';
   const izrada = Number(o.izrada_price) || 0;
@@ -89,10 +100,12 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks) {
       const lList = lenses.filter(l => l.purpose === purpose);
       return `
         <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;">
-          <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">${purpose}</div>
-          ${rx ? `<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">${rxSummaryLine(rx)}</div>` : `<div style="color:var(--text-light);font-size:14px;margin-bottom:8px;">Recept nije povezan</div>`}
-          ${fList.map(f => `<div class="kv-row" style="margin-bottom:4px;"><span>Okvir${f.frame_code ? ` (šifra ${f.frame_code})` : ''}</span><span>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</span></div>`).join('')}
-          ${lList.map(l => `<div class="kv-row" style="margin-bottom:4px;"><span>Stakla: ${lensDescriptor(l)} × ${l.qty}</span><span>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</span></div>`).join('')}
+          <div style="font-weight:700;color:var(--accent);margin-bottom:8px;">${purpose}</div>
+          ${rx ? `<div style="color:var(--text-light);font-size:15px;line-height:1.6;margin-bottom:10px;">${rxDetailLines(rx)}</div>` : `<div style="color:var(--text-light);font-size:14px;margin-bottom:10px;">Recept nije povezan</div>`}
+          ${(fList.length || lList.length) ? `<div style="border-top:1px solid var(--border);padding-top:8px;">` : ''}
+          ${fList.map(f => `<div class="item-row"><span>Okvir${f.frame_code ? ` (šifra ${f.frame_code})` : ''}:</span><span>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</span></div>`).join('')}
+          ${lList.map(l => `<div class="item-row"><span>Stakla: ${lensDescriptor(l)} × ${l.qty}</span><span>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</span></div>`).join('')}
+          ${(fList.length || lList.length) ? `</div>` : ''}
           ${!fList.length && !lList.length ? `<div style="color:var(--text-light);font-size:14px;">Bez okvira i stakala za ovu namenu</div>` : ''}
         </div>
       `;
@@ -111,7 +124,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks) {
       </div>
       ${isGlasses ? `
         ${itemsHtml}
-        ${izrada ? `<div class="kv-row" style="margin-bottom:4px;"><span><b>Izrada:</b> ${fmtMoney(izrada)}</span></div>` : ''}
+        ${izrada ? `<div class="item-row"><span>Izrada:</span><span>${fmtMoney(izrada)}</span></div>` : ''}
       ` : `
         <div class="kv-row">
           <span><b>Naziv:</b> ${o.cl_name || '—'}</span>
@@ -122,16 +135,13 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks) {
         </div>
       `}
       <div class="total-box">
-        <div class="row"><span>Akontacija</span><span>${fmtMoney(o.prepayment)}</span></div>
-        ${o.payment_method ? `<div class="row"><span>Način plaćanja</span><span>${o.payment_method}</span></div>` : ''}
-        ${o.has_installment ? `
-          <div class="row"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
-          <div class="row"><span>Uplaćeno na rate</span><span>${fmtMoney(paidViaInstallments)}</span></div>
-          <div class="row final" style="color:#C0392B;"><span>Ostalo za uplatu</span><span>${fmtMoney(remaining)}</span></div>
-        ` : `
-          <div class="row"><span>Doplata</span><span>${fmtMoney(remaining)}</span></div>
-          <div class="row final"><span>Iznos</span><span>${fmtMoney(total)}</span></div>
-        `}
+        <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:22px;font-weight:700;color:var(--accent);padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border);">
+          <span>Ukupno</span><span>${fmtMoney(total)}</span>
+        </div>
+        <div class="row" style="font-size:15px;color:var(--text-light);"><span>Akontacija</span><span>${fmtMoney(o.prepayment)}</span></div>
+        ${o.payment_method ? `<div class="row" style="font-size:15px;color:var(--text-light);"><span>Način plaćanja</span><span>${o.payment_method}</span></div>` : ''}
+        ${o.has_installment ? `<div class="row" style="font-size:15px;color:var(--text-light);"><span>Uplaćeno na rate</span><span>${fmtMoney(paidViaInstallments)}</span></div>` : ''}
+        ${remaining > 0.5 ? `<div class="row" style="font-size:14px;color:var(--text-light);margin-top:2px;"><span>Ostalo za uplatu</span><span>${fmtMoney(remaining)}</span></div>` : ''}
       </div>
       ${o.has_installment ? `
         <div style="margin-top:10px;">
