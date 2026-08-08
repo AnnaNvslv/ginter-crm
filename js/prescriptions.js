@@ -10,6 +10,7 @@ async function renderPrescriptionsTab() {
 
   if (error) { toast('Greška pri učitavanju recepata', true); return; }
   currentPrescriptions = data;
+  if (typeof updateTabCount === 'function') updateTabCount('prescriptions', currentPrescriptions.length);
 
   const html = `
     <button class="btn-primary" style="margin-bottom:20px;" onclick="openAddPrescriptionModal()">+ Dodaj recept</button>
