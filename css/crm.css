@@ -99,6 +99,11 @@
 .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
 .tab { padding: 12px 20px; cursor: pointer; font-weight: 600; color: var(--text-light); border-bottom: 3px solid transparent; }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .tab-count {
+  background: var(--section-bg); color: var(--text-light); font-size: 12px;
+  padding: 1px 7px; border-radius: 10px; margin-left: 6px;
+}
+.tab.active .tab-count { background: var(--accent); color: #fff; }
 
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 .field-grid label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 6px; font-weight: 600; }
