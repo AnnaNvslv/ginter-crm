@@ -108,7 +108,14 @@ Anna je primetila da je istorija `order_lenses` puna neujednačenih unosa (mnogo
 
 ⏳ **Ostaje da se uradi** (SQL kolone postoje, JS/HTML deo još nije napisan):
 - Polje "Datum recepta" u formi recepta — koristi `prescriptions.rx_date`, nasleđuje `pendingQuickAddDate` u lancu Pacijent→Recept→Porudžbina, inače današnji datum
-- Polje "Popust na porudžbinu (%)" u formi porudžbine — koristi `orders.discount_percent`, primenjuje se na ukupan iznos, utiče na "Ostalo za uplatu" i na `total_amount`
+
+## 2026-08-08 (skidka na porudžbinu — bez izmena šeme, kolona već postojala)
+- **Forma porudžbine**: novo polje "Popust (%)" (`order-form-discount`) između Kontaktna sočiva/Okviri bloka i total-box-a; upisuje se u `orders.discount_percent`
+- Popust se primenjuje na ukupan iznos (i za naočare i za kontaktna sočiva) preko `applyDiscount(subtotal, percent)` — zaokruženo, isto ponašanje u živom pretpregledu forme (`updateOrderFormTotal()`) i pri čuvanju (`saveOrderForm()`, upisuje se u `total_amount`)
+- **Karčica porudžbine** (`renderOrderCard`): ako je `discount_percent > 0`, iznad "Ukupno" prikazuje se "Cena pre popusta" i "Popust N%" red; "Ukupno" i "Ostalo za uplatu" već računaju sa popustom
+- Popust se čuva samo na nivou cele porudžbine (ne po stavci) — postojeći "popust %" na pojedinačnim stvarima (`order_lenses.discount`) ostaje nezavisan i primenjuje se pre ovog
+
+Запушено: `crm.html`, `js/orders.js`.
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
