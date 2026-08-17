@@ -103,7 +103,6 @@ async function renderPatientCard() {
       <div>
         <h2>${fullName(patient)}</h2>
         <div class="badges">
-          ${patient.age ? `<span class="badge">${patient.age} god.</span>` : ''}
           ${patient.tkt ? `<span class="badge">TKT</span>` : ''}
           ${patient.phone ? `<span class="badge">${patient.phone}</span>` : ''}
         </div>
@@ -166,7 +165,6 @@ function renderInfoTab() {
     <div class="list-card">
       <div class="kv-row">
         <span><b>Datum posete:</b> ${fmtDate(patient.visit_date)}</span>
-        <span><b>Godine:</b> ${patient.age || '—'}</span>
         <span><b>Telefon:</b> ${patient.phone || '—'}</span>
         <span><b>TKT:</b> ${patient.tkt ? 'da' : 'ne'}</span>
       </div>
@@ -190,7 +188,6 @@ function openEditPatientModal() {
   document.getElementById('patient-form-id').value = patient.id;
   document.getElementById('patient-form-first-name').value = patient.first_name || '';
   document.getElementById('patient-form-last-name').value = patient.last_name || '';
-  document.getElementById('patient-form-age').value = patient.age || '';
   document.getElementById('patient-form-tkt').checked = patient.tkt;
   document.getElementById('patient-form-phone').value = patient.phone || '';
   document.getElementById('patient-form-visit-date').value = patient.visit_date || todayISO();
@@ -244,7 +241,7 @@ function runDuplicateCheck() {
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);cursor:pointer;" onclick="useDuplicatePatient('${p.id}')">
       <div>
         <div style="font-weight:600;">${fullName(p)}</div>
-        <div style="font-size:13px;color:var(--text-light);">${p.phone || 'bez telefona'}${p.age ? ' · ' + p.age + ' god.' : ''}</div>
+        <div style="font-size:13px;color:var(--text-light);">${p.phone || 'bez telefona'}</div>
       </div>
       <span style="color:var(--accent);font-size:14px;white-space:nowrap;">Otvori karticu →</span>
     </div>
@@ -263,7 +260,6 @@ async function savePatientForm(e) {
   const payload = {
     first_name: document.getElementById('patient-form-first-name').value.trim(),
     last_name: document.getElementById('patient-form-last-name').value.trim(),
-    age: document.getElementById('patient-form-age').value || null,
     tkt: document.getElementById('patient-form-tkt').checked,
     phone: document.getElementById('patient-form-phone').value.trim() || null,
     visit_date: document.getElementById('patient-form-visit-date').value || todayISO(),
