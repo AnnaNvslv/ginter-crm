@@ -118,7 +118,7 @@
         <label for="patient-form-tkt">TKT</label>
       </div>
       <label>Napomene</label>
-      <textarea id="patient-form-notes" rows="3" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
+      <textarea id="patient-form-notes" class="enter-skip" rows="3" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" onclick="closeModal('patient-modal')">Otkaži</button>
         <button type="submit" class="btn-primary">Sačuvaj</button>
@@ -145,6 +145,18 @@
         <option value="za stalno nošenje">za stalno nošenje</option>
         <option value="kontaktna sočiva">kontaktna sočiva</option>
       </select>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="rx-form-client">
+        <label for="rx-form-client">Klijentov recept</label>
+      </div>
+
+      <label>Pregled izvršio/la</label>
+      <div style="display:flex;gap:24px;margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Ervin" style="width:auto;"> Ervin</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Anna" style="width:auto;"> Anna</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Bojana" style="width:auto;"> Bojana</label>
+      </div>
 
       <div class="rx-grid">
         <div class="eye-label">OD (desno oko)</div>
@@ -177,20 +189,8 @@
         </div>
       </div>
 
-      <div class="checkbox-row" style="margin-top:16px;">
-        <input type="checkbox" id="rx-form-client">
-        <label for="rx-form-client">Klijentov recept</label>
-      </div>
-
-      <label>Pregled izvršio/la</label>
-      <div style="display:flex;gap:24px;margin-bottom:16px;">
-        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Ervin" style="width:auto;"> Ervin</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Anna" style="width:auto;"> Anna</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Bojana" style="width:auto;"> Bojana</label>
-      </div>
-
       <label>Komentar</label>
-      <textarea id="rx-form-comment" rows="2" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
+      <textarea id="rx-form-comment" class="enter-skip" rows="2" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
 
       <div class="modal-actions">
         <button type="button" class="btn-secondary" onclick="closeModal('rx-modal'); pendingQuickAddDate=null;">Otkaži</button>
@@ -331,7 +331,7 @@
       </div>
 
       <label>Komentar</label>
-      <textarea id="order-form-comment" rows="2" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
+      <textarea id="order-form-comment" class="enter-skip" rows="2" style="width:100%;font-family:inherit;font-size:17px;padding:12px;border:1px solid var(--border);border-radius:14px;"></textarea>
 
       <div class="modal-actions">
         <button type="button" class="btn-secondary" onclick="closeModal('order-modal')">Otkaži</button>

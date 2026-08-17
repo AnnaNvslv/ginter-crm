@@ -51,6 +51,10 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 // Enter u poljima forme prebacuje fokus na sledeće polje umesto da odmah snimi i zatvori.
 // Na poslednjem polju Enter fokusira dugme "Sačuvaj" (sledeći Enter tada zaista snima).
 // Textarea i dugmad zadržavaju svoje uobičajeno ponašanje (nova linija / klik).
+// Polja sa klasom "enter-skip" (npr. Komentar/Napomene — retko se popunjavaju pri brzom
+// unosu) se preskaču u lancu navigacije: Enter ide pravo na sledeće polje posle njih
+// (ili na Sačuvaj), umesto da se zaustavi na njima. Ručni klik/Tab u njih i dalje radi
+// normalno, kao i Enter unutar njih (nova linija), jer tag==='TEXTAREA' grana ostaje ista.
 function initEnterNavigation() {
   document.querySelectorAll('.modal form').forEach(form => {
     if (form.dataset.navBound) return;
@@ -61,7 +65,7 @@ function initEnterNavigation() {
       if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
       e.preventDefault();
       const fields = Array.from(form.querySelectorAll('input, select, textarea'))
-        .filter(el => el.type !== 'hidden' && !el.disabled && el.offsetParent !== null);
+        .filter(el => el.type !== 'hidden' && !el.disabled && el.offsetParent !== null && !el.classList.contains('enter-skip'));
       const idx = fields.indexOf(e.target);
       if (idx === -1) return;
       const next = fields[idx + 1];
