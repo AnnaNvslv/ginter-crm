@@ -6,7 +6,7 @@ async function renderPrescriptionsTab() {
     .from('prescriptions')
     .select('*')
     .eq('patient_id', activePatientId)
-    .order('created_at', { ascending: false });
+    .order('rx_date', { ascending: false });
 
   if (error) { toast('Greška pri učitavanju recepata', true); return; }
   currentPrescriptions = data;
@@ -19,7 +19,7 @@ async function renderPrescriptionsTab() {
         <div class="list-card-header">
           <div class="title">${rx.purpose || '—'}${rx.is_client_rx ? ' <span class="badge">klijentov recept</span>' : ''}</div>
           <div class="actions">
-            <span style="color:var(--text-light);font-size:14px;">${fmtDate(rx.created_at?.slice(0,10))}</span>
+            <span style="color:var(--text-light);font-size:14px;">${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))}</span>
             <button class="btn-secondary" onclick="openEditPrescriptionModal('${rx.id}')">Izm.</button>
             <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Obr.</button>
           </div>
@@ -46,6 +46,12 @@ async function renderPrescriptionsTab() {
             <span><b>DIA:</b> ${rx.dia || '—'}</span>
           </div>
         ` : ''}
+        ${(rx.od_prism || rx.os_prism) ? `
+          <div class="kv-row" style="margin-top:8px;">
+            <span><b>Prizma OD:</b> ${rx.od_prism || '—'}</span>
+            <span><b>Prizma OS:</b> ${rx.os_prism || '—'}</span>
+          </div>
+        ` : ''}
         ${rx.checked_by ? `<div class="kv-row" style="margin-top:8px;"><span><b>Pregled izvršio/la:</b> ${rx.checked_by}</span></div>` : ''}
         ${rx.comment ? `<div style="margin-top:10px;color:var(--text-light);">${rx.comment}</div>` : ''}
         ${rx.created_by ? `<div class="entry-meta">Uneo/la: ${rx.created_by} · ${fmtDate(rx.created_at?.slice(0,10))}</div>` : ''}
@@ -62,7 +68,7 @@ function toggleRxClFields() {
 }
 
 // Fokusira polje OD Sph umesto podrazumevanog prvog polja (Namena), pošto se ono
-// najc̍ešće prvo popunjava pri unosu recepta.
+// najčešće prvo popunjava pri unosu recepta.
 function focusRxSphField() {
   setTimeout(() => {
     const el = document.getElementById('rx-form-od_sph');
@@ -94,13 +100,14 @@ function buildRxFormPayload() {
   const payload = {
     patient_id: activePatientId,
     purpose,
+    rx_date: document.getElementById('rx-form-date').value || todayISO(),
     is_client_rx: document.getElementById('rx-form-client').checked,
     bc: isCl ? (document.getElementById('rx-form-bc').value.trim() || null) : null,
     dia: isCl ? (document.getElementById('rx-form-dia').value.trim() || null) : null,
     checked_by: checkedBy,
     comment: document.getElementById('rx-form-comment').value.trim() || null,
   };
-  ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
+  ['od_sph','od_cyl','od_ax','od_prism','os_sph','os_cyl','os_ax','os_prism','add','degr','pd'].forEach(f => {
     const v = document.getElementById(`rx-form-${f}`).value.trim();
     payload[f] = v || null;
   });
@@ -112,6 +119,10 @@ function openAddPrescriptionModal() {
   document.getElementById('rx-modal-title').textContent = 'Novi recept';
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
+  // Datum recepta: ako se otvara odmah nakon kreiranja novog pacijenta, preuzima se
+  // datum posete pacijenta (pendingQuickAddDate); inače današnji datum. Uvek se može
+  // ručno promeniti — bitno kad se naknadno dodaje recept za stariju posetu.
+  document.getElementById('rx-form-date').value = pendingQuickAddDate || todayISO();
   toggleRxClFields();
   updateRxChainUI();
   openModal('rx-modal');
@@ -124,8 +135,9 @@ function openEditPrescriptionModal(id) {
   document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
   document.getElementById('rx-form-purpose').value = rx.purpose || 'za daljinu';
+  document.getElementById('rx-form-date').value = rx.rx_date || (rx.created_at ? rx.created_at.slice(0, 10) : todayISO());
   document.getElementById('rx-form-client').checked = rx.is_client_rx;
-  ['od_sph','od_cyl','od_ax','os_sph','os_cyl','os_ax','add','degr','pd'].forEach(f => {
+  ['od_sph','od_cyl','od_ax','od_prism','os_sph','os_cyl','os_ax','os_prism','add','degr','pd'].forEach(f => {
     document.getElementById(`rx-form-${f}`).value = rx[f] ?? '';
   });
   document.getElementById('rx-form-bc').value = rx.bc || '';
@@ -146,9 +158,9 @@ function openEditPrescriptionModal(id) {
 // tek kad se lanac završi normalnim "Sačuvaj".
 //
 // Pre resetovanja forme pamti se ko je označen u "Pregled izvršio/la" na upravo sačuvanom
-// receptu — isti izvršioci se odmah označavaju i na sledećem receptu u lancu (najc̍ešće je
+// receptu — isti izvršioci se odmah označavaju i na sledećem receptu u lancu (najčešće je
 // isti pregled/isto lice za oba recepta istog pacijenta, ne treba ponovo klikati).
-// Namena sledećeg recepta u lancu podrazumevano postaje "za blizinu" — najc̍ešći slučaj kad
+// Namena sledećeg recepta u lancu podrazumevano postaje "za blizinu" — najčešći slučaj kad
 // Ana unosi dva recepta zaredom je prvi za daljinu, drugi za blizinu.
 async function saveAndAddAnotherPrescription() {
   const payload = buildRxFormPayload();
@@ -161,10 +173,12 @@ async function saveAndAddAnotherPrescription() {
 
   const checkedNames = ['Ervin', 'Anna', 'Bojana']
     .filter(name => document.getElementById(`rx-form-checked-${name}`).checked);
+  const rxDate = payload.rx_date;
 
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
   document.getElementById('rx-form-purpose').value = 'za blizinu';
+  document.getElementById('rx-form-date').value = rxDate;
   checkedNames.forEach(name => { document.getElementById(`rx-form-checked-${name}`).checked = true; });
   toggleRxClFields();
   updateRxChainUI();
@@ -252,10 +266,10 @@ async function loadExamsSection(reset = false) {
   }
 
   let query = sb.from('prescriptions').select('*')
-    .order('created_at', { ascending: false })
+    .order('rx_date', { ascending: false })
     .range(examsSectionOffset, examsSectionOffset + EXAMS_PAGE - 1);
   if (patientIds) query = query.in('patient_id', patientIds);
-  if (dateFilter) query = query.gte('created_at', dateFilter + 'T00:00:00').lte('created_at', dateFilter + 'T23:59:59');
+  if (dateFilter) query = query.eq('rx_date', dateFilter);
 
   const { data, error } = await query;
   if (error) { toast('Greška pri učitavanju pregleda', true); return; }
@@ -282,7 +296,7 @@ function renderExamsSectionTable(hasMore = false) {
       <tbody>
         ${examsSectionRows.map(({ rx, patient: p }) => `
           <tr onclick="goToPatient('${rx.patient_id}','prescriptions')">
-            <td>${fmtDate(rx.created_at?.slice(0,10))}</td>
+            <td>${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))}</td>
             <td class="link">${p ? fullName(p) : '—'}</td>
             <td>${rx.purpose || '—'}</td>
             <td class="num">${rx.od_sph || '—'} / ${rx.od_cyl || '—'} / ${rx.od_ax || '—'}</td>
