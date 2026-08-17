@@ -84,6 +84,7 @@ function rxDetailLines(rx) {
   let lines = `<div>OD: ${odParts.join(' · ') || '—'}</div><div>OS: ${osParts.join(' · ') || '—'}</div>`;
   if (rx.pd) lines += `<div>PD: ${rx.pd}</div>`;
   if (rx.purpose === 'kontaktna sočiva' && (rx.bc || rx.dia)) lines += `<div>BC: ${rx.bc || '—'} · DIA: ${rx.dia || '—'}</div>`;
+  if (rx.od_prism || rx.os_prism) lines += `<div>Prizma: OD ${rx.od_prism || '—'} · OS ${rx.os_prism || '—'}</div>`;
   return lines;
 }
 
@@ -229,7 +230,7 @@ function renderFrameRows() {
 }
 
 // Naziv stakla je u svom širokom redu (sa autocomplete listom iz kataloga). Ispod:
-// indeks i premaž (takođe iz kataloga), pa namena/cena/popust/kol.
+// indeks i premaz (takođe iz kataloga), pa namena/cena/popust/kol.
 function renderLensRows() {
   document.getElementById('lens-container').innerHTML = orderLensesDraft.map((l, i) => `
     <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
@@ -242,7 +243,7 @@ function renderLensRows() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <input type="text" placeholder="indeks (npr. 1.6)" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" style="padding:10px;font-size:16px;">
-        <input type="text" placeholder="premaž (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
+        <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
         <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
@@ -321,7 +322,7 @@ async function loadLensAutocompleteData() {
   if (coatList) coatList.innerHTML = knownLensCoatings.map(v => `<option value="${esc(v)}"></option>`).join('');
 }
 
-// Dodaje u katalog svaku vrednost koja je upravo sačuvana u porudžbini, ako je tu još nema
+// Dodaje u katalog svaku vrednost koja je upravo sačuvana u porudžbini, ako je tu već nema
 // (ON CONFLICT DO NOTHING preko unique(kind, value)). Tako se predlozi grade postepeno
 // iz stvarno korišćenih vrednosti, bez ručnog održavanja liste.
 async function updateLensCatalog(lenses) {
@@ -383,7 +384,7 @@ function rxSummaryLine(rx) {
 }
 
 function rxOptionLabel(rx) {
-  return `${rx.purpose || 'recept'} — ${rxSummaryLine(rx)} (${fmtDate(rx.created_at?.slice(0,10))})`;
+  return `${rx.purpose || 'recept'} — ${rxSummaryLine(rx)} (${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))})`;
 }
 
 function renderPrescriptionRows() {
@@ -450,7 +451,7 @@ function removePrescriptionRow(i) {
 }
 
 async function populatePrescriptionOptions() {
-  const { data } = await sb.from('prescriptions').select('*').eq('patient_id', activePatientId).order('created_at', { ascending: false });
+  const { data } = await sb.from('prescriptions').select('*').eq('patient_id', activePatientId).order('rx_date', { ascending: false });
   currentPrescriptionsForOrder = data || [];
   orderPrescriptionsDraft = orderPrescriptionsDraft.filter(id => currentPrescriptionsForOrder.some(rx => rx.id === id));
   renderPrescriptionRows();
