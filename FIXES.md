@@ -147,6 +147,19 @@ Anna unosi veliki broj starih pacijenata odjednom (retroaktivno) i tražila je d
 
 Zapušeno: `crm.html`, `js/utils.js`, `js/prescriptions.js`, `js/orders.js`, `js/nav.js`, `FIXES.md`.
 
+## 2026-08-17 (deo 2 — uklonjeno polje Godine, datum recepta, prizma, krupnije čekboksove)
+
+- **Uklonjeno polje "Godine"** iz forme pacijenta u potpunosti (input, prikaz na kartici pacijenta, Info tab, upozorenje o duplim pacijentima) — `crm.html`, `js/patients.js`. Kolona `patients.age` u bazi NIJE obrisana (samo se više ne koristi), da se ne izgubi istorijski podatak kod starih pacijenata.
+- **Forma pacijenta — "Datum posete" premešten** na mesto gde je bilo "Godine" (odmah posle Prezimena), Telefon ide poslednji — `crm.html`.
+- **Galočka TKT** sada je `enter-skip` — retko se čekira, Enter je više ne zaustavlja u lancu navigacije — `crm.html`.
+- **Recept — dodat datum recepta**: novo polje "Datum" pored "Namena" (koristi postojeću kolonu `prescriptions.rx_date`, SQL je već bio primenjen ranije ali JS/HTML deo nije bio urađen). Podrazumevano: datum posete pacijenta ako se recept unosi odmah nakon kreiranja novog pacijenta (`pendingQuickAddDate`), inače današnji datum — uvek se može ručno promeniti, što je bitno kad se naknadno dodaje recept za stariju posetu starog pacijenta. U lancu "+ Dodaj još recept" datum se prenosi na sledeći recept (ista poseta). **Recepti u tabu Recepti, u odeljku Pregledi i u listi za povezivanje na porudžbini sada prikazuju i sortiraju po ovom datumu (rx_date), a ne po datumu unosa u bazu (created_at)** — rešava problem da su svi retroaktivno uneti stari pacijenti prikazivani sa današnjim (2026) datumom umesto datuma iz sveske. Pretraga po datumu u Pregledima takođe filtrira po `rx_date` — `crm.html`, `js/prescriptions.js`, `js/orders.js`.
+- **Recept — dodata polja Prizma (OD/OS)**: nova kolona `prescriptions.od_prism` / `os_prism` (text, SQL primenjen preko Supabase MCP), polja su u rx-gridu pored Ax (OD/OS red), markirana `enter-skip` — retko se popunjavaju. Prikazuju se u kartici recepta i u receptu porudžbine samo ako su uneta, isto kao BC/DIA — `crm.html`, `js/prescriptions.js`, `js/orders.js`.
+- **Recept — "Pregled izvršio/la" vraćen na kraj forme** (posle BC/DIA, pre Komentara) i redizajniran: "Klijentov recept" i "Ervin" u jednom redu (Enter prebacuje fokus između njih, Space čekira/otčekira — podrazumevano ponašanje za čekboksove u lancu navigacije), "Anna" i "Bojana" u sledećem redu i markirani `enter-skip` (retko se biraju, ne treba se na njima zaustavljati Enterom). Sami čekboksovi su znatno uvećani (28×28px, veliki klikljivi razmak oko teksta) — bilo je teško pogoditi mišem standardnu veličinu. Nova CSS klasa `.rx-checkbox-lg` — `crm.html`, `css/crm.css`.
+- **Popap je proširen** (640px → 760px, uz `max-width:92vw` da ne pređe ekran) i vertikalni razmaci malo stegnuti (padding, margin-bottom na par mesta), da forma recepta staje na ekran bez (ili sa znatno manje) skrolovanja — `css/crm.css`.
+- **Hitfix**: prilikom prve isporuke ovog dela izmena, `crm.html`/`css/crm.css` su bili zapušeni odmah, ali `js/patients.js`/`js/prescriptions.js`/`js/orders.js`/ovaj fajl su privremeno zaostali zbog istovremenog GitHub platform incidenta (API greške pri push-u) — u tom kratkom prozoru pacijenti se nisu mogli sačuvati (stari JS je tražio polje `patient-form-age` koje više ne postoji u HTML-u). Dozapušeno pojedinačno čim je GitHub API oporavljen.
+
+Zapušeno: `crm.html`, `css/crm.css`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `FIXES.md`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
