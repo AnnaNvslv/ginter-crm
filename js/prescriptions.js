@@ -62,7 +62,7 @@ function toggleRxClFields() {
 }
 
 // Fokusira polje OD Sph umesto podrazumevanog prvog polja (Namena), pošto se ono
-// najčešće prvo popunjava pri unosu recepta.
+// najc̍ešće prvo popunjava pri unosu recepta.
 function focusRxSphField() {
   setTimeout(() => {
     const el = document.getElementById('rx-form-od_sph');
@@ -144,6 +144,12 @@ function openEditPrescriptionModal(id) {
 // Snima trenutni recept (uvek kao nov, insert) i odmah otvara praznu formu za sledeći —
 // modal ostaje otvoren. Sačuvani recept se dodaje u rxChain i povezuje na porudžbinu
 // tek kad se lanac završi normalnim "Sačuvaj".
+//
+// Pre resetovanja forme pamti se ko je označen u "Pregled izvršio/la" na upravo sačuvanom
+// receptu — isti izvršioci se odmah označavaju i na sledećem receptu u lancu (najc̍ešće je
+// isti pregled/isto lice za oba recepta istog pacijenta, ne treba ponovo klikati).
+// Namena sledećeg recepta u lancu podrazumevano postaje "za blizinu" — najc̍ešći slučaj kad
+// Ana unosi dva recepta zaredom je prvi za daljinu, drugi za blizinu.
 async function saveAndAddAnotherPrescription() {
   const payload = buildRxFormPayload();
   payload.created_by = getCurrentUser()?.name || null;
@@ -153,8 +159,13 @@ async function saveAndAddAnotherPrescription() {
   rxChain.push({ id: data.id, purpose: payload.purpose });
   toast('Recept sačuvan — unesite sledeći');
 
+  const checkedNames = ['Ervin', 'Anna', 'Bojana']
+    .filter(name => document.getElementById(`rx-form-checked-${name}`).checked);
+
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
+  document.getElementById('rx-form-purpose').value = 'za blizinu';
+  checkedNames.forEach(name => { document.getElementById(`rx-form-checked-${name}`).checked = true; });
   toggleRxClFields();
   updateRxChainUI();
   focusRxSphField();

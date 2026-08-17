@@ -15,3 +15,18 @@ async function goToPatient(patientId, tab) {
   await openPatient(patientId);
   if (tab) await switchTab(tab);
 }
+
+// Prečica za brzi unos mnogo starih pacijenata: fizičko dugme desno od "1"
+// (Backquote — na EN rasporedu je to `~`, na RU rasporedu "ё"; e.code je isti bez
+// obzira na raspored tastature, pa prečica radi identično na oba). Otvara "Novi
+// pacijent" kad je aktivna sekcija Klijenti, van polja za unos i van otvorenog modala
+// — da se ne aktivira dok se kuca tekst koji sadrži taj znak.
+document.addEventListener('keydown', (e) => {
+  if (e.code !== 'Backquote') return;
+  if (currentSection !== 'clients') return;
+  const activeTag = document.activeElement && document.activeElement.tagName;
+  if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+  if (document.querySelector('.modal-overlay.active')) return;
+  e.preventDefault();
+  openAddPatientModal();
+});

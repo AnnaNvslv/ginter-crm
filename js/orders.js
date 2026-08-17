@@ -7,6 +7,7 @@ let currentPrescriptionsForOrder = [];
 let knownLensNames = [];
 let knownLensIndexes = [];
 let knownLensCoatings = [];
+let knownLensPrices = {}; // naziv stakla (lowercase, trim) -> poslednja korišćena cena/kom
 
 async function renderOrdersTab() {
   const { data: orders, error } = await sb
@@ -228,7 +229,7 @@ function renderFrameRows() {
 }
 
 // Naziv stakla je u svom širokom redu (sa autocomplete listom iz kataloga). Ispod:
-// indeks i premaz (takođe iz kataloga), pa namena/cena/popust/kol.
+// indeks i premaž (takođe iz kataloga), pa namena/cena/popust/kol.
 function renderLensRows() {
   document.getElementById('lens-container').innerHTML = orderLensesDraft.map((l, i) => `
     <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
@@ -236,20 +237,36 @@ function renderLensRows() {
         <select onchange="orderLensesDraft[${i}].purpose=this.value" style="padding:10px;font-size:16px;border:1px solid var(--border);border-radius:10px;">
           ${purposeOptions(l.purpose)}
         </select>
-        <input type="text" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="orderLensesDraft[${i}].lens_name=this.value" style="padding:10px;font-size:16px;width:100%;">
+        <input type="text" id="lens-name-${i}" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="onLensNameInput(${i}, this.value)" style="padding:10px;font-size:16px;width:100%;">
         <button type="button" onclick="removeLensRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <input type="text" placeholder="indeks (npr. 1.6)" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" style="padding:10px;font-size:16px;">
-        <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
+        <input type="text" placeholder="premaž (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-        <input type="text" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
+        <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
         <input type="text" placeholder="popust %" value="${l.discount ?? ''}" oninput="orderLensesDraft[${i}].discount=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
         <input type="text" placeholder="kol." value="${l.qty ?? 2}" oninput="orderLensesDraft[${i}].qty=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
       </div>
     </div>
   `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">Nema dodatih stakala</div>';
+}
+
+// Poziva se pri kucanju u polje "naziv stakla". Ako se uneti naziv (case-insensitive)
+// tačno poklapa sa nazivom iz kataloga koji ima zapamćenu cenu, i polje "cena/kom" je
+// još uvek prazno, cena se automatski upisuje — ne treba je kucati ponovo za stakla
+// koja se uvek naručuju po istoj ceni (npr. "CR-39 1.5 UNC"). Ako je cena već uneta
+// (ručno ili iz prethodnog poklapanja), ne prepisuje se.
+function onLensNameInput(i, name) {
+  orderLensesDraft[i].lens_name = name;
+  const known = knownLensPrices[name.trim().toLowerCase()];
+  if (known != null && !orderLensesDraft[i].price_unit) {
+    orderLensesDraft[i].price_unit = known;
+    const priceEl = document.getElementById(`lens-price-${i}`);
+    if (priceEl) priceEl.value = known;
+  }
+  updateOrderFormTotal();
 }
 
 function addFrameRow() {
@@ -280,16 +297,20 @@ function removeLensRow(i) {
 // da stare, nekonzistentne unose ne bi zatrpavale <datalist>. Katalog se sam popunjava
 // dalje kroz saveOrderForm() svaki put kad se sačuva nova vrednost.
 async function loadLensAutocompleteData() {
-  const { data } = await sb.from('lens_catalog').select('kind, value').order('value');
-  const names = [], indexes = [], coatings = [];
+  const { data } = await sb.from('lens_catalog').select('kind, value, default_price').order('value');
+  const names = [], indexes = [], coatings = [], prices = {};
   (data || []).forEach(r => {
-    if (r.kind === 'name') names.push(r.value);
+    if (r.kind === 'name') {
+      names.push(r.value);
+      if (r.default_price != null) prices[r.value.trim().toLowerCase()] = Number(r.default_price);
+    }
     else if (r.kind === 'index') indexes.push(r.value);
     else if (r.kind === 'coating') coatings.push(r.value);
   });
   knownLensNames = names;
   knownLensIndexes = indexes;
   knownLensCoatings = coatings;
+  knownLensPrices = prices;
 
   const esc = v => v.replace(/"/g, '&quot;');
   const nameList = document.getElementById('lens-name-list');
@@ -300,7 +321,7 @@ async function loadLensAutocompleteData() {
   if (coatList) coatList.innerHTML = knownLensCoatings.map(v => `<option value="${esc(v)}"></option>`).join('');
 }
 
-// Dodaje u katalog svaku vrednost koja je upravo sačuvana u porudžbini, ako je tu već nema
+// Dodaje u katalog svaku vrednost koja je upravo sačuvana u porudžbini, ako je tu još nema
 // (ON CONFLICT DO NOTHING preko unique(kind, value)). Tako se predlozi grade postepeno
 // iz stvarno korišćenih vrednosti, bez ručnog održavanja liste.
 async function updateLensCatalog(lenses) {
@@ -318,6 +339,26 @@ async function updateLensCatalog(lenses) {
   });
   if (!rows.length) return;
   await sb.from('lens_catalog').upsert(rows, { onConflict: 'kind,value', ignoreDuplicates: true });
+}
+
+// Pamti poslednju korišćenu cenu za svaki naziv stakla (kolona lens_catalog.default_price),
+// da bi se sledeći put mogla automatski predložiti (vidi onLensNameInput()). Za razliku od
+// updateLensCatalog() (koji samo dodaje nove nazive i ništa ne prepisuje), ovde se cena
+// namerno ažurira pri svakom čuvanju — tako lista prati stvarno trenutne cene.
+async function updateLensPriceMemory(lenses) {
+  const rows = [];
+  const seen = new Set();
+  lenses.forEach(l => {
+    const name = (l.lens_name || '').trim();
+    const price = Number(l.price_unit);
+    if (!name || !price) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    rows.push({ kind: 'name', value: name, default_price: price });
+  });
+  if (!rows.length) return;
+  await sb.from('lens_catalog').upsert(rows, { onConflict: 'kind,value' });
 }
 
 // Dodaje po jedan red okvira i stakala za datu namenu, ali samo ako takva namena
@@ -608,6 +649,7 @@ async function saveOrderForm(e) {
         price_unit: Number(l.price_unit) || 0, discount: Number(l.discount) || 0, qty: Number(l.qty) || 1,
       })));
       await updateLensCatalog(orderLensesDraft);
+      await updateLensPriceMemory(orderLensesDraft);
     }
   }
 

@@ -39,7 +39,7 @@
 ## 2026-07-20 (часть 1 — без изменений схемы БД)
 - Recept: PD переставлен перед Add (было Add/Degr/PD → стало PD/Add/Degr)
 - Форма заказа: поле "Avans" переименовано в "Akontacija"; в блок с суммой добавлена живая строка "Ostalo za uplatu" (Ukupno − Akontacija), пересчитывается на лету
-- Карточка окна/стёкол/акontacije: цена окна, цена/скидка стекла, akontacija — были предзаполнены нулём, из-за чего плейсхолдер не был виден и легко было промахнуться; теперь поля пустые с плейсхолдером, пока не введено значение
+- Карточка окна/стёкол/akontacije: цена окна, цена/скидка стекла, akontacija — были предзаполнены нулём, из-за чего плейсхолдер не был виден и легко было промахнуться; теперь поля пустые с плейсхолдером, пока не введено значение
 - Карточка заказа в списке заказов пациента: строки окон и стёкол теперь подписаны "Okvir — <namena>" / "Stakla — <namena>" вместо голой namena — понятно, что относится к оправе, а что к стеклу; надпись "Avans" в итогах заказа → "Akontacija"
 
 Запушено: `crm.html`, `js/orders.js`.
@@ -54,8 +54,8 @@
 SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`, `comment`, `created_by`; `orders` получила `payment_method`, `created_by`, `izrada_price`; `installments` получила `created_by`; создана таблица `order_prescriptions` (многие-ко-многим заказ↔рецепт), старые связи из `orders.prescription_id` перенесены в неё.
 
 - **Recept**: при namena = kontaktna sočiva появляются поля BC и DIA (скрыты для остальных namena, `toggleRxClFields()`); новое поле "Pregled izvršio/la" (Ervin/Anna/Bojana/lični); новое поле "Komentar"; карточка рецепта показывает BC/DIA (если это kontaktna sočiva), Pregled izvršio/la, komentar, и внизу справа мелким текстом "Uneo/la: <ime> · <datum>"
-- **Porudžbina — mультиselект recepata**: вместо одиночного select теперь список чекбоксов по всем рецептам пациента; у каждого — namena, дата и строка с диоптриями (`OD sph/cyl/ax · OS sph/cyl/ax · PD`, плюс BC/DIA для kontaktna sočiva) — видно сразу, не открывая рецепт. Можно выбрать несколько (например, за dalj + za bliz в один заказ). Связи хранятся в `order_prescriptions`, при сохранении заказа старые связи для этого заказа удаляются и пишутся заново
-- **Porudžbina — Izrada**: новое поле в блоке Okviri/Stakla (только для naočare), учитывается в Ukupno и в живом пересчёте Ostalo za uplatu
+- **Porudžbina — мультиселект recepata**: вместо одиночного select теперь список чекбоксов по всем рецептам пациента; у каждого — namena, дата и строка с диоптриями (`OD sph/cyl/ax · OS sph/cyl/ax · PD`, плюс BC/DIA для kontaktna sočiva) — видно сразу, не открывая рецепт. Можно выбрать несколько (например, za dalj + za bliz в один заказ). Связи хранятся в `order_prescriptions`, при сохранении заказа старые связи для этого заказа удаляются и пишутся заново
+- **Porudžbina — Izrada**: новое поле в блоке Okviri/Stakla (только для naoc̍are), учитывается в Ukupno и в живом пересчёте Ostalo za uplatu
 - **Porudžbina — Način plaćanja**: выпадающий список Gotovinom/Kartica/Ček/Virman рядом с Akontacija, отображается в карточке заказа
 - **Карточка заказа**: сверху показывает связанные recepti (namena через запятую), строка "Izrada" в итогах если введена, "Način plaćanja" в блоке суммы, внизу справа "Uneo/la: <ime> · <datum>"
 - **История uplata**: у каждой installment теперь видно, кто её внёс (created_by), как в списке в форме заказа, так и через быстрое добавление уплаты прямо из карточки
@@ -64,7 +64,7 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 
 ## 2026-07-21 (часть 4 — рецепты выпадающим списком вместо чекбоксов, группировка карточки заказа)
 - Форма заказа: привязка рецептов переделана с чекбокс-листа на выпадающие списки по одному на строку (как окна/стёкла) + кнопка "+ Dodaj recept" для добавления ещё одной строки; в каждом варианте списка видны диоптрии
-- Карточка заказа (вкладка Porudžbine у пациента): вместо плоского списка "Recepti: ..." + отдельных таблиц окон/стёкол — теперь группировка по namena: для каждой namena свой блок с рецептом (диоптрии) сверху, окном(-ами) и стёклами снизу. Группировка идёт по совпадению текстового значения namena окна/стекла и namena привязанного рецепта — если у окна/стекла и рецепта разные списки назначений (например Sočiva-заказ или "za računar" vs "za kompjuter"), они попадут в отдельные блоки; пока не унифицировано
+- Карточка заказа (вкладка Porudžbine у пациента): вместо плоского списка "Recepti: ..." + отдельных таблиц окон/стёкол — теперь группировка по namena: для каждой namena свой блок с рецептом (диоптрии) сверху, окном(-ами) и стёклами снизу. Группировка идёт по совпадению текстового значения namena окна/стекла и namena привязанного рецепта — если у окна/стекла и рецепта разные списки назначений (например Soc̍iva-заказ или "za računar" vs "za kompjuter"), они попадут в отдельные блоки; пока не унифицировано
 - Итоговый блок суммы в карточке заказа: если заказ НЕ на рате — "Doplata" теперь обычной строкой, а "Iznos" (полная стоимость) стал крупным/выделенным; если на рате — как раньше "Ostalo za uplatu" крупно выделено красным
 
 Запушено: `crm.html`, `js/orders.js`, `js/prescriptions.js`.
@@ -89,9 +89,9 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 
 **SQL прогнан**: `orders.discount_percent` (numeric, default 0), `prescriptions.rx_date` (date, default CURRENT_DATE), `order_lenses.lens_index` (text), `order_lenses.lens_coating` (text).
 
-- **Naziv stakla — automatski predlozi**: pri kliku/kucanju u polje "naziv stakla" u formi porudžbine nudi se `<datalist>` sa svim nazivima koji su ikad uneti (kod bilo kog pacijenta, bilo kog zaposlenog) — ne treba ponovo kucati isti naziv. Isto i za nova polja **Indeks** (npr. 1.5/1.6/1.67/1.74) i **Premaz** (npr. AR/UV/blue) — kolone `order_lenses.lens_index` / `lens_coating`, učitavaju se u `loadLensAutocompleteData()` (`js/orders.js`), pune `<datalist>` elemente definisane u `crm.html` (`lens-name-list`, `lens-index-list`, `lens-coating-list`)
-- **Red stakla u formi porudžbine redizajniran**: naziv stakla je sada u svom širokom redu (gore, pored namene), indeks/premaz u sredini, cena/popust/kol. na dnu — umesto jednog zbijenog reda sa 6 uskih polja (`renderLensRows()` u `js/orders.js`)
-- Prikaz stakala u karčici porudžbine (`renderOrderCard` → `lensDescriptor()`) sada uključuje indeks i premaz pored naziva, ako su uneti
+- **Naziv stakla — automatski predlozi**: pri kliku/kucanju u polje "naziv stakla" u formi porudžbine nudi se `<datalist>` sa svim nazivima koji su ikad uneti (kod bilo kog pacijenta, bilo kog zaposlenog) — ne treba ponovo kucati isti naziv. Isto i za nova polja **Indeks** (npr. 1.5/1.6/1.67/1.74) i **Premaž** (npr. AR/UV/blue) — kolone `order_lenses.lens_index` / `lens_coating`, učitavaju se u `loadLensAutocompleteData()` (`js/orders.js`), pune `<datalist>` elemente definisane u `crm.html` (`lens-name-list`, `lens-index-list`, `lens-coating-list`)
+- **Red stakla u formi porudžbine redizajniran**: naziv stakla je sada u svom širokom redu (gore, pored namene), indeks/premaž u sredini, cena/popust/kol. na dnu — umesto jednog zbijenog reda sa 6 uskih polja (`renderLensRows()` u `js/orders.js`)
+- Prikaz stakala u karčici porudžbine (`renderOrderCard` → `lensDescriptor()`) sada uključuje indeks i premaž pored naziva, ako su uneti
 
 Запушено (JS/HTML): `crm.html`, `js/orders.js`.
 
@@ -100,8 +100,8 @@ Anna je primetila da je istorija `order_lenses` puna neujednačenih unosa (mnogo
 
 **SQL progan**: nova tabela `lens_catalog` (`id uuid`, `kind text` — 'name'/'index'/'coating', `value text`, `unique(kind, value)`) — bez RLS, kao i ostale tabele u ovom projektu.
 
-- **Predlozi sada dolaze iz `lens_catalog`, a ne iz istorije porudžbina** — katalog kreće prazan, tako da se sav stari neujednačeni unos odmah gubi iz predloga (`loadLensAutocompleteData()` sada čita `lens_catalog` umesto `order_lenses`)
-- **Katalog se sam puni ubuduće**: pri svakom čuvanju porudžbine, `updateLensCatalog()` upisuje naziv/indeks/premaz svakog stakla u katalog (`upsert` sa `ignoreDuplicates`, po `unique(kind, value)`) — tako se predlozi grade postepeno iz stvarno korišćenih vrednosti od danas pa nadalje, bez ručnog održavanja
+- **Predlozi sada dolaze iz `lens_catalog`, a ne iz istorije porudžbina** — katalog kreće prazan, tako da se sav stari neujednačen unos odmah gubi iz predloga (`loadLensAutocompleteData()` sada čita `lens_catalog` umesto `order_lenses`)
+- **Katalog se sam puni ubuduće**: pri svakom čuvanju porudžbine, `updateLensCatalog()` upisuje naziv/indeks/premaž svakog stakla u katalog (`upsert` sa `ignoreDuplicates`, po `unique(kind, value)`) — tako se predlozi grade postepeno iz stvarno korišćenih vrednosti od danas pa nadalje, bez ručnog održavanja
 - Ako se kasnije primeti pogrešna/duplirana vrednost u predlozima, briše se jednom SQL komandom iz `lens_catalog` (npr. `delete from lens_catalog where kind='name' and value='...'`)
 
 Запушено: `js/orders.js`.
@@ -131,6 +131,21 @@ Anna je primetila da je istorija `order_lenses` puna neujednačenih unosa (mnogo
 - CSS: `.tab-count` (neutralna siva pilula, na aktivnom tabu postaje plava) — odvojeno od `.nav-tab .count-badge` (crveni bedž za dugovanja na gornjoj navigaciji), da se brojevi recepata/porudžbina ne mešaju vizuelno sa upozorenjem o dugu
 
 Запушено: `crm.html`, `css/crm.css`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`.
+
+## 2026-08-17 (brz unos starih pacijenata — bez izmena šeme, osim jedne kolone)
+
+Anna unosi veliki broj starih pacijenata odjednom (retroaktivno) i tražila je da se taj unos ubrza — manje klikova mišem, više Enter-a, manje ponovnog kucanja istih vrednosti.
+
+- **Prečica za "Novi pacijent"**: dugme fizički desno od "1" na tastaturi (`Backquote` — `~` na EN rasporedu, "ё" na RU, radi identično na oba jer se prati fizički kod tastera, ne karakter) sada odmah otvara formu novog pacijenta kad je aktivna sekcija Klijenti. Ne radi dok je fokus u polju za unos ili dok je otvoren neki modal (`js/nav.js`, novi `keydown` listener).
+- **Enter-navigacija preskače Komentar/Napomene**: prethodno je Enter iz poslednjeg polja (npr. poslednja "Pregled izvršio/la" čekboks) upadao u textarea Komentar/Napomene — dalji Enter je tamo samo pravio novi red, pa se moralo mišem kliknuti na "Sačuvaj". Sada su ta tri retko popunjavana polja (`patient-form-notes`, `rx-form-comment`, `order-form-comment`) markirana klasom `enter-skip` i `initEnterNavigation()` (`js/utils.js`) ih preskače u lancu — Enter ide pravo na dugme "Sačuvaj" (prvi Enter ga fokusira, drugi snima, kao i ranije). Ručni klik/Tab u ta polja i dalje radi normalno, kao i Enter unutar njih (novi red).
+- **Recept — redosled polja**: "Klijentov recept" i "Pregled izvršio/la" (Ervin/Anna/Bojana) premešteni odmah ispod "Namena", iznad OD/OS dioptrija (bilo je posle dioptrija, ispod BC/DIA) — `crm.html`.
+- **Recept — lanac "+ Dodaj još recept"**: kad je na prethodnom receptu bio označen neki od "Pregled izvršio/la" (npr. Ervin), ista oznaka se sada automatski prenosi na sledeći recept u lancu — ne treba ponovo klikati. Namena sledećeg recepta u lancu podrazumevano postaje "za blizinu" (najc̍ešći slučaj: prvi recept za daljinu, drugi za blizinu) — `js/prescriptions.js`, `saveAndAddAnotherPrescription()`.
+- **Provera duplih pacijenata po telefonu** — provereno, već je ranije implementirano i radi ispravno: `checkDuplicatePatient()`/`runDuplicateCheck()` u `js/patients.js` reaguje i na ime i na telefon nezavisno (`oninput` na sva tri polja), tako da ako se prvo unese ime bez poklapanja, a zatim telefon koji se poklapa sa postojećim pacijentom, upozorenje se ipak pojavljuje. Nikakva izmena nije bila potrebna.
+- **Automatsko pamćenje cene stakla**: nova kolona `lens_catalog.default_price` (numeric, nullable — SQL primenjen direktno preko Supabase MCP). Kad se u polje "naziv stakla" unese naziv koji se tačno poklapa (case-insensitive) sa nazivom iz kataloga koji ima zapamćenu cenu, i polje "cena/kom" je još prazno, cena se automatski upiše (`js/orders.js`: `onLensNameInput()`, `knownLensPrices`). Cena se pamti/ažurira pri svakom čuvanju porudžbine (`updateLensPriceMemory()`) — lista cena se sama gradi i ostaje ažurna od danas pa nadalje, bez ručnog održavanja. Anna će naknadno poslati spisak najc̍ešćih stakala sa cenama za jednokratno popunjavanje početnih vrednosti (SQL upsert u `lens_catalog`).
+
+⚠️ **Bezbednosna napomena (postojeća, ne uvedena ovom sesijom)**: Supabase advisor javlja da `public.lens_catalog` i `public.order_prescriptions` nemaju uključeno Row Level Security — anon ključ (u kodu na GitHub-u) trenutno može direktno čitati/menjati te dve tabele mimo CRM-a. Isto verovatno važi i za ostale tabele ovog projekta (`patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `users`) — vidi TODO ispod. Nije ništa promenjeno bez dogovora — samo prosleđujem nalaz.
+
+Zapušeno: `crm.html`, `js/utils.js`, `js/prescriptions.js`, `js/orders.js`, `js/nav.js`, `FIXES.md`.
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
