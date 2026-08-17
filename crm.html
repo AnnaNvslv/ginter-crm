@@ -97,16 +97,12 @@
           <input type="text" id="patient-form-last-name" oninput="checkDuplicatePatient()">
         </div>
         <div>
-          <label>Godine</label>
-          <input type="number" id="patient-form-age" min="0" max="120">
+          <label>Datum posete</label>
+          <input type="date" id="patient-form-visit-date">
         </div>
         <div>
           <label>Telefon</label>
           <input type="text" id="patient-form-phone" oninput="checkDuplicatePatient()">
-        </div>
-        <div>
-          <label>Datum posete</label>
-          <input type="date" id="patient-form-visit-date">
         </div>
       </div>
       <div id="patient-dup-warning" style="display:none;margin-bottom:16px;padding:12px 14px;background:var(--section-bg);border:1px solid var(--border);border-radius:14px;">
@@ -114,7 +110,7 @@
         <div id="patient-dup-list"></div>
       </div>
       <div class="checkbox-row">
-        <input type="checkbox" id="patient-form-tkt">
+        <input type="checkbox" id="patient-form-tkt" class="enter-skip">
         <label for="patient-form-tkt">TKT</label>
       </div>
       <label>Napomene</label>
@@ -135,27 +131,23 @@
     <div id="rx-chain-info" style="color:var(--text-light);font-size:14px;margin-bottom:12px;"></div>
     <form id="rx-form" onsubmit="savePrescriptionForm(event)">
       <input type="hidden" id="rx-form-id">
-      <label>Namena</label>
-      <select id="rx-form-purpose" style="width:100%;margin-bottom:16px;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;" onchange="toggleRxClFields()">
-        <option value="za daljinu">za daljinu</option>
-        <option value="za blizinu">za blizinu</option>
-        <option value="za računar">za računar</option>
-        <option value="progresivno">progresivno</option>
-        <option value="bifokalno">bifokalno</option>
-        <option value="za stalno nošenje">za stalno nošenje</option>
-        <option value="kontaktna sočiva">kontaktna sočiva</option>
-      </select>
-
-      <div class="checkbox-row">
-        <input type="checkbox" id="rx-form-client">
-        <label for="rx-form-client">Klijentov recept</label>
-      </div>
-
-      <label>Pregled izvršio/la</label>
-      <div style="display:flex;gap:24px;margin-bottom:16px;">
-        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Ervin" style="width:auto;"> Ervin</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Anna" style="width:auto;"> Anna</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;"><input type="checkbox" id="rx-form-checked-Bojana" style="width:auto;"> Bojana</label>
+      <div class="field-grid" style="margin-bottom:16px;">
+        <div>
+          <label>Namena</label>
+          <select id="rx-form-purpose" style="width:100%;padding:14px;font-size:18px;border:1px solid var(--border);border-radius:14px;" onchange="toggleRxClFields()">
+            <option value="za daljinu">za daljinu</option>
+            <option value="za blizinu">za blizinu</option>
+            <option value="za računar">za računar</option>
+            <option value="progresivno">progresivno</option>
+            <option value="bifokalno">bifokalno</option>
+            <option value="za stalno nošenje">za stalno nošenje</option>
+            <option value="kontaktna sočiva">kontaktna sočiva</option>
+          </select>
+        </div>
+        <div>
+          <label>Datum</label>
+          <input type="date" id="rx-form-date">
+        </div>
       </div>
 
       <div class="rx-grid">
@@ -163,13 +155,13 @@
         <div><label>Sph</label><input type="text" id="rx-form-od_sph" placeholder="npr. +2,5"></div>
         <div><label>Cyl</label><input type="text" id="rx-form-od_cyl"></div>
         <div><label>Ax</label><input type="text" id="rx-form-od_ax"></div>
-        <div></div>
+        <div><label>Prizma</label><input type="text" id="rx-form-od_prism" class="enter-skip"></div>
 
         <div class="eye-label">OS (levo oko)</div>
         <div><label>Sph</label><input type="text" id="rx-form-os_sph"></div>
         <div><label>Cyl</label><input type="text" id="rx-form-os_cyl"></div>
         <div><label>Ax</label><input type="text" id="rx-form-os_ax"></div>
-        <div></div>
+        <div><label>Prizma</label><input type="text" id="rx-form-os_prism" class="enter-skip"></div>
 
         <div class="eye-label">Opšte</div>
         <div><label>PD</label><input type="text" id="rx-form-pd"></div>
@@ -186,6 +178,17 @@
         <div>
           <label>DIA</label>
           <input type="text" id="rx-form-dia" placeholder="npr. 14,2">
+        </div>
+      </div>
+
+      <div class="rx-checked-block">
+        <div class="rx-checked-row">
+          <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-client"> Klijentov recept</label>
+          <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-checked-Ervin"> Ervin</label>
+        </div>
+        <div class="rx-checked-row">
+          <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-checked-Anna" class="enter-skip"> Anna</label>
+          <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-checked-Bojana" class="enter-skip"> Bojana</label>
         </div>
       </div>
 
