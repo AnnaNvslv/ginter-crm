@@ -211,6 +211,10 @@ function setOrderType(type) {
   document.querySelectorAll('.type-toggle button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
   document.getElementById('glasses-fields').style.display = type === 'glasses' ? 'block' : 'none';
   document.getElementById('cl-fields').style.display = type === 'contact_lenses' ? 'block' : 'none';
+  // Izrada je sada u istom redu sa Popust (izvan #glasses-fields, radi kompaktnijeg
+  // layouta), pa se vidljivost njenog polja prati posebno — i dalje samo za naočare.
+  const izradaWrap = document.getElementById('izrada-field-wrap');
+  if (izradaWrap) izradaWrap.style.display = type === 'glasses' ? 'block' : 'none';
 }
 
 function renderFrameRows() {

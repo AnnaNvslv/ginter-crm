@@ -243,13 +243,6 @@
         <datalist id="lens-coating-list"></datalist>
         <div id="lens-container"></div>
         <button type="button" class="btn-secondary" onclick="addLensRow()" style="margin-bottom:20px;">+ Dodaj stakla</button>
-
-        <div class="field-grid">
-          <div>
-            <label>Izrada</label>
-            <input type="number" id="order-form-izrada" min="0" placeholder="0" oninput="updateOrderFormTotal()">
-          </div>
-        </div>
       </div>
 
       <div id="cl-fields" style="display:none;">
@@ -283,6 +276,10 @@
       </div>
 
       <div class="field-grid">
+        <div id="izrada-field-wrap">
+          <label>Izrada</label>
+          <input type="number" id="order-form-izrada" min="0" placeholder="0" oninput="updateOrderFormTotal()">
+        </div>
         <div>
           <label>Popust (%)</label>
           <input type="number" id="order-form-discount" min="0" max="100" step="0.01" placeholder="0" oninput="updateOrderFormTotal()">
