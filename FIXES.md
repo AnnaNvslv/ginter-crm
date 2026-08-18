@@ -167,6 +167,14 @@ Zapušeno: `crm.html`, `css/crm.css`, `js/patients.js`, `js/prescriptions.js`, `
 
 Zapušeno: `js/nav.js`, `js/orders.js`, `FIXES.md`.
 
+## 2026-08-18 (deo 2 — dopuna: ipak procurelo pri brzom pritisku prečice; Izrada+Popust u jednom redu)
+
+- **Dopuna bugfixa za procurelo slovo**: Anna je potvrdila da se "‚" i dalje pojavljuje pri **brzom, jednokratnom** pritisku prečice (Backquote/"ё") — dakle uzrok NIJE (samo) OS auto-repeat iz prethodnog fixa. Pravi mehanizam: na nekim raspored/OS kombinacijama znak fizičkog tastera stiže u polje kroz IME/composition mehanizam (Chrome ga tada obeleži kao `inputType: "insertCompositionText"`/`"insertFromComposition"` ili `event.isComposing===true`), koji ide odvojeno od običnog keydown-a — `preventDefault()` na sam keydown ga ne može sprečiti, jer composition-commit stiže asinhrono, baš u trenutku kad `openModal()` (kroz `setTimeout(0)`) prebaci fokus u prvo polje novog popapa, pre nego što Anna stigne da pritisne ijedan pravi taster.
+  Ispravljeno u `js/nav.js`: nova funkcija `guardAgainstLeakedShortcutChar()`, pozvana odmah posle `openAddPatientModal()`. Hvata prvi `input` event na polju "Ime" — ako taj event nosi obeležje composition-a (`isComposing` / `insertCompositionText` / `insertFromComposition`) i pre njega nije bilo pravog `keydown`-a u tom polju, vrednost polja se briše (jednom, tiho). Normalno kucanje — uključujući vrlo brzo kucanje odmah posle prečice — ostaje netaknuto, jer nosi pravi `keydown` pre `input` eventa. Prethodni `e.repeat`-guard iz prve dopune ovog dana ostaje (hvata poseban slučaj fizičkog držanja tastera), ovaj novi guard radi dodatno uz njega, ne zamenjuje ga.
+- **Forma porudžbine — Izrada i Popust u istom redu**: polje "Izrada" premešteno iz svog reda na dnu bloka Okviri/Stakla u zajednički `.field-grid` red sa "Popust (%)" (koji je već bio ispod bloka Okviri/Stakla ili Kontaktna sočiva) — jedan red umesto dva, manje skrolovanja u formi. Vidljivost "Izrada" i dalje samo za naočare (kontrolisano kroz `#izrada-field-wrap`, prati se u `setOrderType()` u `js/orders.js` isto kao ranije `#glasses-fields`) — `crm.html`, `js/orders.js`.
+
+Zapušeno: `js/nav.js`, `js/orders.js`, `crm.html`, `FIXES.md`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
