@@ -238,7 +238,7 @@ function renderLensRows() {
         <select onchange="orderLensesDraft[${i}].purpose=this.value" style="padding:10px;font-size:16px;border:1px solid var(--border);border-radius:10px;">
           ${purposeOptions(l.purpose)}
         </select>
-        <input type="text" id="lens-name-${i}" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="onLensNameInput(${i}, this.value)" style="padding:10px;font-size:16px;width:100%;">
+        <input type="text" id="lens-name-${i}" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="onLensNameInput(${i}, this.value)" onkeydown="handleLensEnterJump(event, ${i})" style="padding:10px;font-size:16px;width:100%;">
         <button type="button" onclick="removeLensRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -246,7 +246,7 @@ function renderLensRows() {
         <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-        <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
+        <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" onkeydown="handleLensEnterJump(event, ${i})" style="padding:10px;font-size:16px;text-align:right;">
         <input type="text" placeholder="popust %" value="${l.discount ?? ''}" oninput="orderLensesDraft[${i}].discount=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
         <input type="text" placeholder="kol." value="${l.qty ?? 2}" oninput="orderLensesDraft[${i}].qty=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
       </div>
@@ -268,6 +268,21 @@ function onLensNameInput(i, name) {
     if (priceEl) priceEl.value = known;
   }
   updateOrderFormTotal();
+}
+
+// Enter u polju "naziv stakla" ili "cena/kom": ako je cena za taj red stakla već
+// popunjena (bilo automatski iz kataloga preko onLensNameInput(), bilo ručno) — Enter
+// preskače sva ostala polja (indeks, premaz, popust, kol., i sve posle) i ide pravo
+// na "Sačuvaj", umesto da prolazi kroz njih jedno po jedno kao inače. Ako cena još
+// nije uneta (nepoznato staklo), ne radi ništa posebno — Enter nastavlja normalan
+// lanac navigacije (initEnterNavigation() u utils.js), da se cena može ručno uneti.
+function handleLensEnterJump(e, i) {
+  if (e.key !== 'Enter') return;
+  const price = orderLensesDraft[i]?.price_unit;
+  if (price === undefined || price === null || String(price).trim() === '') return;
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelector('#order-form button[type="submit"]')?.focus();
 }
 
 function addFrameRow() {

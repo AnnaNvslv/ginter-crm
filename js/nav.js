@@ -23,9 +23,19 @@ async function goToPatient(patientId, tab) {
 // — da se ne aktivira dok se kuca tekst koji sadrži taj znak.
 document.addEventListener('keydown', (e) => {
   if (e.code !== 'Backquote') return;
-  if (currentSection !== 'clients') return;
   const activeTag = document.activeElement && document.activeElement.tagName;
-  if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+  const inField = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT';
+  // Ako se ovaj taster i dalje fizički drži (OS auto-repeat) dok je fokus već
+  // unutar polja otvorenog modala, to je rep istog pritiska koji je maločas
+  // otvorio "Novi pacijent" i prebacio fokus u prvo polje — ne sme da procuri
+  // kao slovo u to polje. preventDefault() ovde ne otvara modal ponovo, samo
+  // guta te repeat-evente dok se taster fizički ne pusti.
+  if (e.repeat && inField && document.querySelector('.modal-overlay.active')) {
+    e.preventDefault();
+    return;
+  }
+  if (inField) return;
+  if (currentSection !== 'clients') return;
   if (document.querySelector('.modal-overlay.active')) return;
   e.preventDefault();
   openAddPatientModal();

@@ -160,6 +160,13 @@ Zapušeno: `crm.html`, `js/utils.js`, `js/prescriptions.js`, `js/orders.js`, `js
 
 Zapušeno: `crm.html`, `css/crm.css`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `FIXES.md`.
 
+## 2026-08-18 (bagovi: procureno slovo posle prečice ё/Backquote, Enter posle cene stakla → pravo na Sačuvaj)
+
+- **Bugfix — procureno slovo pri otvaranju "Novi pacijent" prečicom**: kad se fizički taster desno od "1" (Backquote — "ё" na RU rasporedu) drži i tek malo predugo (OS auto-repeat), poslednji repeat-event stizao je NAKON što je fokus već prebačen u prvo polje novootvorenog modala (`openModal()` fokusira async, kroz `setTimeout(0)`), i taj repeat-event nije bio presretnut (`preventDefault()` se ranije pozivao samo kad NIJE fokusirano polje) — pa se taj karakter upisivao u polje "Ime" pre nego što je Anna počela da kuca. Ispravljeno u `js/nav.js`: dodata provera `e.repeat` — ako se isti fizički taster i dalje drži dok je fokus već u polju otvorenog modala, taj repeat-event se guta (`preventDefault()`), bez ponovnog otvaranja modala i bez upisa u polje. Normalno kucanje (uključujući slovo "ё" u bilo kom drugom polju) i jednokratni pritisak prečice ostaju nepromenjeni.
+- **Enter posle cene stakla → pravo na "Sačuvaj"**: u formi porudžbine, kad se za red stakla unese naziv koji ima zapamćenu cenu u katalogu (cena se automatski upiše) ili se cena ručno unese, Enter u polju "naziv stakla" ili "cena/kom" sada odmah fokusira dugme "Sačuvaj", umesto da prolazi kroz indeks/premaz/popust/kol. jedno po jedno kao ranije. Ako cena za taj red stakla još nije popunjena (nepoznato staklo, cena nije ni ručno uneta), Enter i dalje radi kao pre — ide na sledeće polje, da bi se cena mogla uneti. Novo: `handleLensEnterJump(e, i)` u `js/orders.js`, okačeno preko `onkeydown` na `lens-name-${i}` i `lens-price-${i}` (koristi `e.stopPropagation()` da izbegne dvostruku obradu sa postojećim `initEnterNavigation()` iz `js/utils.js`, koji ostaje nepromenjen).
+
+Zapušeno: `js/nav.js`, `js/orders.js`, `FIXES.md`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
