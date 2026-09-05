@@ -206,6 +206,27 @@ async function saveQuickInstallment(orderId) {
   await renderOrdersTab();
 }
 
+// Sklopivi blok ispod iznosa (Akontacija, način plaćanja, rate, komentar) — retko se
+// popunjava pri brzom unosu, pa je podrazumevano sklopljen da cela forma stane bez
+// skrolovanja. Ako ga Ana sama otvori, ostaje otvoren i za sledeće porudžbine u ovoj
+// sesiji (orderExtraSticky); pri izmeni porudžbine koja već ima nešto od tih podataka
+// otvara se sam, da ne bi ostali sakriveni.
+let orderExtraSticky = false;
+
+function applyOrderExtra(open) {
+  const body = document.getElementById('order-extra');
+  const btn = document.getElementById('order-extra-toggle');
+  if (body) body.hidden = !open;
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function toggleOrderExtra() {
+  const body = document.getElementById('order-extra');
+  if (!body) return;
+  orderExtraSticky = body.hidden;
+  applyOrderExtra(body.hidden);
+}
+
 function setOrderType(type) {
   orderFormType = type;
   document.querySelectorAll('.type-toggle button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
@@ -219,7 +240,7 @@ function setOrderType(type) {
 
 function renderFrameRows() {
   document.getElementById('frames-container').innerHTML = orderFramesDraft.map((f, i) => `
-    <div style="display:grid;grid-template-columns:1fr 100px 130px auto 40px;gap:8px;align-items:center;margin-bottom:8px;">
+    <div style="display:grid;grid-template-columns:1fr 100px 130px auto 34px;gap:6px;align-items:center;margin-bottom:6px;">
       <select onchange="orderFramesDraft[${i}].purpose=this.value" style="padding:10px;font-size:16px;border:1px solid var(--border);border-radius:10px;">
         ${purposeOptions(f.purpose)}
       </select>
@@ -230,35 +251,32 @@ function renderFrameRows() {
       </label>
       <button type="button" onclick="removeFrameRow(${i})" style="color:#C0392B;padding:6px;">×</button>
     </div>
-  `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">Nema dodatih okvira</div>';
+  `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:4px;">Nema dodatih okvira</div>';
 }
 
-// Naziv stakla je u svom širokom redu (sa autocomplete listom iz kataloga). Ispod:
-// indeks i premaz (takođe iz kataloga), pa namena/cena/popust/kol.
-// onfocus/onclick="openDatalist(this)" — Chrome inače ne prikazuje predloge iz
-// <datalist> na prost fokus/klik praznog polja, samo posle prvih par otkucanih slova
-// (vidi openDatalist() u utils.js).
+// Red stakla u dva reda: gore namena i naziv (sa listom predloga iz kataloga), dole
+// indeks, premaz, cena/kom, popust i količina — tako ceo red staje u dva reda umesto
+// tri, pa forma porudžbine ostaje bez skrolovanja.
+// onfocus/onclick="openDatalist(this)" otvara našu listu predloga (vidi utils.js).
 function renderLensRows() {
   document.getElementById('lens-container').innerHTML = orderLensesDraft.map((l, i) => `
-    <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
-      <div style="display:grid;grid-template-columns:140px 1fr 40px;gap:8px;align-items:center;margin-bottom:8px;">
+    <div style="border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:6px;">
+      <div style="display:grid;grid-template-columns:130px 1fr 34px;gap:6px;align-items:center;margin-bottom:6px;">
         <select onchange="orderLensesDraft[${i}].purpose=this.value" style="padding:10px;font-size:16px;border:1px solid var(--border);border-radius:10px;">
           ${purposeOptions(l.purpose)}
         </select>
         <input type="text" id="lens-name-${i}" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="onLensNameInput(${i}, this.value)" onkeydown="handleLensEnterJump(event, ${i})" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:10px;font-size:16px;width:100%;">
         <button type="button" onclick="removeLensRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <input type="text" placeholder="indeks (npr. 1.6)" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:10px;font-size:16px;">
-        <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:10px;font-size:16px;">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-        <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" onkeydown="handleLensEnterJump(event, ${i})" style="padding:10px;font-size:16px;text-align:right;">
-        <input type="text" placeholder="popust %" value="${l.discount ?? ''}" oninput="orderLensesDraft[${i}].discount=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
-        <input type="text" placeholder="kol." value="${l.qty ?? 2}" oninput="orderLensesDraft[${i}].qty=this.value;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 0.8fr 0.6fr;gap:6px;">
+        <input type="text" placeholder="indeks" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:8px 10px;font-size:16px;">
+        <input type="text" placeholder="premaz" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:8px 10px;font-size:16px;">
+        <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" onkeydown="handleLensEnterJump(event, ${i})" style="padding:8px 10px;font-size:16px;text-align:right;">
+        <input type="text" placeholder="popust %" value="${l.discount ?? ''}" oninput="orderLensesDraft[${i}].discount=this.value;updateOrderFormTotal()" style="padding:8px 10px;font-size:16px;text-align:right;">
+        <input type="text" placeholder="kol." value="${l.qty ?? 2}" oninput="orderLensesDraft[${i}].qty=this.value;updateOrderFormTotal()" style="padding:8px 10px;font-size:16px;text-align:right;">
       </div>
     </div>
-  `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:8px;">Nema dodatih stakala</div>';
+  `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:4px;">Nema dodatih stakala</div>';
 }
 
 // Poziva se pri kucanju u polje "naziv stakla". Ako se uneti naziv (case-insensitive)
@@ -417,8 +435,8 @@ function renderPrescriptionRows() {
     return;
   }
   wrap.innerHTML = orderPrescriptionsDraft.map((rxId, i) => `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-      <select onchange="updatePrescriptionRow(${i}, this.value)" style="flex:1;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+      <select onchange="updatePrescriptionRow(${i}, this.value)" style="flex:1;padding:9px 12px;font-size:16px;border:1px solid var(--border);border-radius:12px;">
         ${currentPrescriptionsForOrder.map(rx => `<option value="${rx.id}" ${rx.id === rxId ? 'selected' : ''}>${rxOptionLabel(rx)}</option>`).join('')}
       </select>
       <button type="button" onclick="removePrescriptionRow(${i})" style="color:#C0392B;padding:6px;">×</button>
@@ -522,6 +540,7 @@ async function openAddOrderModal(dateOverride) {
   orderLensesDraft = [];
   orderPrescriptionsDraft = [];
   setOrderType('glasses');
+  applyOrderExtra(orderExtraSticky);
   renderFrameRows();
   renderLensRows();
   await populatePrescriptionOptions();
@@ -568,6 +587,7 @@ async function openEditOrderModal(id) {
 
   toggleInstallmentFields(o.has_installment);
   document.getElementById('order-form-installment').checked = o.has_installment;
+  applyOrderExtra(orderExtraSticky || !!(Number(o.prepayment) || o.payment_method || o.has_installment || o.comment));
 
   updateOrderFormTotal();
   openModal('order-modal');
