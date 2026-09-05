@@ -185,6 +185,21 @@ Sve provereno Playwright testom protiv stvarnih fajlova repoa (stubovani `config
 
 Zapušeno: `js/utils.js`, `js/orders.js`, `js/prescriptions.js`, `js/nav.js`, `FIXES.md`.
 
+## 2026-09-05 (deo 2 — kompaktna forma porudžbine, sklopivi blok ispod iznosa)
+
+Cilj: da cela forma porudžbine stane na ekran (1308×765) bez skrolovanja.
+
+- **Sve ispod iznosa je sklopljeno**: Akontacija, Način plaćanja, Na rate (sa uplatama) i Komentar premešteni su u sklopivi blok "Akontacija, način plaćanja, rate i komentar" (`.collapse-toggle` / `.collapse-body` u `css/crm.css`, `toggleOrderExtra()` / `applyOrderExtra()` u `js/orders.js`). Podrazumevano je sklopljen; ako ga Ana sama otvori, ostaje otvoren i za sledeće porudžbine u toj sesiji (`orderExtraSticky`), a pri izmeni porudžbine koja već ima akontaciju/način plaćanja/rate/komentar otvara se sam da ti podaci ne bi ostali sakriveni. "Ukupno" i "Ostalo za uplatu" ostaju uvek vidljivi, a Enter iz polja "Popust" ide pravo na "Sačuvaj" (skrivena polja se preskaču, `initEnterNavigation()` filtrira po vidljivosti).
+- **Naslov i prekidač Naočare/Kontaktna sočiva u istom redu** — `.modal-head`, jedan red manje.
+- **Naslovi sekcija nose svoje dugme**: "Okviri [+ Dodaj okvir]", "Stakla [+ Dodaj stakla]", "Povezati recept(e) [+ Dodaj recept]" (`.section-heading.with-action`) — dugmad više ne zauzimaju poseban red ispod liste.
+- **Izrada/Popust i kutija sa iznosom stoje jedno pored drugog** (`.sum-row`) umesto jedno ispod drugog.
+- **Red stakla u dva reda umesto tri**: namena i naziv gore, indeks/premaz/cena-kom/popust/kol. u jednom redu ispod (`renderLensRows()`).
+- **Manji razmaci u popapima**: padding modala, `.field-grid`, `.section-heading`, `.total-box`, `.checkbox-row`, `.modal-actions`; veličine polja smanjene samo u formi porudžbine (`#order-modal input/select/textarea`), `max-height` modala 92vh → 95vh. Inline stilovi sa `<select>`-ova prebačeni u `.modal select` (jedno mesto umesto svakog polja posebno).
+
+Izmereno u Chromiumu na 1308×765 (Anin ekran): prazna forma 1315px → 606px, tipična (1 recept + okvir + stakla) 1493px → 720px — obe sada staju bez skrolovanja; porudžbina za kontaktna sočiva 721px, takođe bez skrola. Sa dva recepta (2 okvira + 2 stakla) forma i dalje skroluje (919px) — objektivno duža forma. Provereno i da lista stakala, izbor iz nje sa automatskom cenom, Enter-lanac posle cene, prebacivanje na sočiva, lanac recept→porudžbina i izmena postojeće porudžbine rade nepromenjeno (11 provera).
+
+Zapušeno: `crm.html`, `css/crm.css`, `js/orders.js`, `FIXES.md`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
