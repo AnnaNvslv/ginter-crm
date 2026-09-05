@@ -42,28 +42,37 @@ document.addEventListener('keydown', (e) => {
   guardAgainstLeakedShortcutChar();
 });
 
-// I posle preventDefault() na sam keydown, na nekim raspored/OS kombinacijama znak
-// ovog tastera ipak stigne u polje — ali kroz IME/composition mehanizam koji ide
-// odvojeno od običnog unosa (Chrome ga tada obeleži kao inputType
-// "insertCompositionText"/"insertFromComposition" ili event.isComposing=true), pa ga
-// keydown.preventDefault() ne može sprečiti. To stiže asinhrono, tačno u trenutku kad
-// se fokus premesti u prvo polje novog popapa — pre nego što Anna stigne da pritisne
-// ijedan pravi taster. Ovde hvatamo baš taj prvi "input" event na polju: ako nosi
-// obeležje composition-a, brišemo ga (jednom); ako je to obično kucanje (pravi
-// keydown je već stigao), ne diramo ništa.
+// I posle preventDefault() na sam keydown, znak ovog tastera ipak zna da stigne u polje
+// "Ime" pošto se fokus premesti tamo asinhrono (openModal() koristi setTimeout) — na RU
+// rasporedu ovaj fizički taster kuca "ё" direktno (nije IME kompozicija kao kod
+// kineskog/japanskog unosa), pa provera samo na isComposing/insertCompositionText
+// (raniji pokušaj popravke) ne hvata ovo curenje: stiže kao običan "insertText" input
+// event, bez ikakvog prethodnog pravog keydown-a NA TOM POLJU.
+//
+// Zato ovde ne gledamo tip input eventa uopšte — samo da li je pre njega na ovom polju
+// već registrovan pravi fizički keydown (Anin sledeći stvarni pritisak tastera). Ako
+// nije, curenje se briše. Prozor od ~200ms (ne samo "prvi sledeći input") pokriva i
+// slučaj kad znak stigne u dva navrata (prazan pa pravi event).
 function guardAgainstLeakedShortcutChar() {
   setTimeout(() => {
     const field = document.getElementById('patient-form-first-name');
     if (!field) return;
     let realKeySeen = false;
-    const onKeydown = () => { realKeySeen = true; };
-    const onInput = (ev) => {
-      if (!realKeySeen && (ev.isComposing || ev.inputType === 'insertCompositionText' || ev.inputType === 'insertFromComposition')) {
-        field.value = '';
-      }
+    let timer;
+    const cleanup = () => {
       field.removeEventListener('keydown', onKeydown, true);
+      field.removeEventListener('input', onInput);
+      clearTimeout(timer);
     };
-    field.addEventListener('keydown', onKeydown, { capture: true, once: true });
-    field.addEventListener('input', onInput, { once: true });
+    const onKeydown = () => {
+      realKeySeen = true;
+      cleanup();
+    };
+    const onInput = () => {
+      if (!realKeySeen) field.value = '';
+    };
+    field.addEventListener('keydown', onKeydown, { capture: true });
+    field.addEventListener('input', onInput);
+    timer = setTimeout(cleanup, 200);
   }, 0);
 }

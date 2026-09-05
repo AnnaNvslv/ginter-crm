@@ -48,6 +48,16 @@ function openModal(id) {
 }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+// Chrome ne prikazuje padajuću listu iz <datalist> na prost fokus/klik praznog polja —
+// predlozi se pojave tek kad se otkucaju prva slova. showPicker() eksplicitno otvara tu
+// listu odmah pri fokusiranju/kliku. Stariji browseri bez podrške za showPicker() (ili
+// poziv van korisničke geste) samo nastavljaju sa uobičajenim ponašanjem — otud try/catch.
+function openDatalist(el) {
+  if (typeof el.showPicker === 'function') {
+    try { el.showPicker(); } catch (err) { /* ignoriši */ }
+  }
+}
+
 // Enter u poljima forme prebacuje fokus na sledeće polje umesto da odmah snimi i zatvori.
 // Na poslednjem polju Enter fokusira dugme "Sačuvaj" (sledeći Enter tada zaista snima).
 // Textarea i dugmad zadržavaju svoje uobičajeno ponašanje (nova linija / klik).

@@ -220,6 +220,10 @@ async function savePrescriptionForm(e) {
     // pendingQuickAddDate (ako postoji) prenosi datum pacijenta u formu porudžbine;
     // openAddOrderModal ga sam resetuje nakon upotrebe.
     await openAddOrderModal(pendingQuickAddDate);
+    // Ako je bar jedan recept iz lanca za kontaktna sočiva, porudžbina se odmah
+    // otvara na tabu "Kontaktna sočiva" umesto podrazumevanog taba "Naočare"
+    // (openAddOrderModal uvek startuje na 'glasses').
+    if (chainPurposes.includes('kontaktna sočiva')) setOrderType('contact_lenses');
     orderPrescriptionsDraft = chainIds;
     chainPurposes.forEach(p => ensureFrameAndLensForPurpose(p));
     renderPrescriptionRows();

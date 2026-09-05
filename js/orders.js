@@ -235,6 +235,9 @@ function renderFrameRows() {
 
 // Naziv stakla je u svom širokom redu (sa autocomplete listom iz kataloga). Ispod:
 // indeks i premaz (takođe iz kataloga), pa namena/cena/popust/kol.
+// onfocus/onclick="openDatalist(this)" — Chrome inače ne prikazuje predloge iz
+// <datalist> na prost fokus/klik praznog polja, samo posle prvih par otkucanih slova
+// (vidi openDatalist() u utils.js).
 function renderLensRows() {
   document.getElementById('lens-container').innerHTML = orderLensesDraft.map((l, i) => `
     <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px;">
@@ -242,12 +245,12 @@ function renderLensRows() {
         <select onchange="orderLensesDraft[${i}].purpose=this.value" style="padding:10px;font-size:16px;border:1px solid var(--border);border-radius:10px;">
           ${purposeOptions(l.purpose)}
         </select>
-        <input type="text" id="lens-name-${i}" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="onLensNameInput(${i}, this.value)" onkeydown="handleLensEnterJump(event, ${i})" style="padding:10px;font-size:16px;width:100%;">
+        <input type="text" id="lens-name-${i}" placeholder="naziv stakla" list="lens-name-list" value="${l.lens_name || ''}" oninput="onLensNameInput(${i}, this.value)" onkeydown="handleLensEnterJump(event, ${i})" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:10px;font-size:16px;width:100%;">
         <button type="button" onclick="removeLensRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <input type="text" placeholder="indeks (npr. 1.6)" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" style="padding:10px;font-size:16px;">
-        <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" style="padding:10px;font-size:16px;">
+        <input type="text" placeholder="indeks (npr. 1.6)" list="lens-index-list" value="${l.lens_index || ''}" oninput="orderLensesDraft[${i}].lens_index=this.value" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:10px;font-size:16px;">
+        <input type="text" placeholder="premaz (npr. AR, UV)" list="lens-coating-list" value="${l.lens_coating || ''}" oninput="orderLensesDraft[${i}].lens_coating=this.value" onfocus="openDatalist(this)" onclick="openDatalist(this)" style="padding:10px;font-size:16px;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
         <input type="text" id="lens-price-${i}" placeholder="cena/kom" value="${l.price_unit ?? ''}" oninput="orderLensesDraft[${i}].price_unit=this.value;updateOrderFormTotal()" onkeydown="handleLensEnterJump(event, ${i})" style="padding:10px;font-size:16px;text-align:right;">
