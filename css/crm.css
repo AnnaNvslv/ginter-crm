@@ -105,8 +105,8 @@
 }
 .tab.active .tab-count { background: var(--accent); color: #fff; }
 
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-.field-grid label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 6px; font-weight: 600; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 12px; }
+.field-grid label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 3px; font-weight: 600; }
 
 .rx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .rx-grid .eye-label { grid-column: 1 / -1; font-weight: 700; color: var(--accent); margin-top: 8px; }
@@ -115,10 +115,10 @@
   background: var(--section-bg);
   color: var(--accent);
   font-weight: 700;
-  font-size: 17px;
-  padding: 10px 16px;
+  font-size: 16px;
+  padding: 7px 14px;
   border-radius: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .list-card {
@@ -160,14 +160,14 @@
 .modal-overlay.active { display: flex; }
 .modal {
   position: relative;
-  background: var(--white); border-radius: 18px; padding: 28px 32px;
-  width: 760px; max-width: 92vw; max-height: 92vh; overflow-y: auto;
+  background: var(--white); border-radius: 18px; padding: 16px 22px;
+  width: 760px; max-width: 92vw; max-height: 95vh; overflow-y: auto;
 }
-.modal h3 { font-size: 22px; margin-bottom: 16px; padding-right: 36px; }
-.modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+.modal h3 { font-size: 21px; margin-bottom: 10px; padding-right: 36px; }
+.modal-actions { display: flex; gap: 12px; margin-top: 14px; justify-content: flex-end; }
 
 .modal-close {
-  position: absolute; top: 22px; right: 22px;
+  position: absolute; top: 16px; right: 18px;
   width: 32px; height: 32px; border-radius: 50%;
   border: none; background: transparent; color: var(--text-light);
   font-size: 22px; line-height: 1; cursor: pointer;
@@ -176,7 +176,7 @@
 }
 .modal-close:hover { background: var(--section-bg); color: var(--text); }
 
-.checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .checkbox-row input { width: auto; }
 .checkbox-row label { font-size: 17px; font-weight: 600; }
 
@@ -192,12 +192,12 @@
 .rx-checkbox-lg:hover { background: var(--section-bg); }
 .rx-checkbox-lg input[type="checkbox"] { width: 28px; height: 28px; cursor: pointer; flex-shrink: 0; }
 
-.type-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
-.type-toggle button { flex: 1; padding: 14px; background: var(--section-bg); color: var(--text); }
+.type-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+.type-toggle button { flex: 1; padding: 10px; font-size: 17px; background: var(--section-bg); color: var(--text); }
 .type-toggle button.active { background: var(--accent); color: var(--white); }
 
-.total-box { background: var(--section-bg); border-radius: var(--radius); padding: 16px 20px; margin-top: 16px; font-size: 18px; }
-.total-box .row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.total-box { background: var(--section-bg); border-radius: var(--radius); padding: 12px 18px; margin-top: 10px; font-size: 17px; }
+.total-box .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
 .total-box .row.final { font-weight: 700; font-size: 20px; color: var(--accent); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
 
 .deleted-badge { color: var(--danger); font-size: 14px; font-weight: 600; }
@@ -207,3 +207,62 @@
 .item-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 16px; padding: 4px 0; }
 .item-row span:first-child { color: var(--text); }
 .item-row span:last-child { font-weight: 600; text-align: right; white-space: nowrap; }
+
+/* ═══ Kompaktna forma porudžbine ═══
+   Cilj: cela forma (recept + okvir + stakla + iznos) staje na ekran bez skrolovanja.
+   Veličine polja su smanjene samo u ovoj formi — ostali popapi ostaju kakvi su bili. */
+#order-modal input:not([type="checkbox"]),
+#order-modal select,
+#order-modal textarea { font-size: 17px; padding: 10px 12px; }
+#order-modal select,
+#order-modal textarea { border: 1px solid var(--border); border-radius: 12px; }
+#order-modal .btn-secondary,
+#order-modal .btn-primary { padding: 10px 18px; font-size: 16px; }
+#order-modal .modal-actions .btn-secondary,
+#order-modal .modal-actions .btn-primary { padding: 13px 26px; font-size: 18px; }
+#order-modal > .modal > form > label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 3px; font-weight: 600; }
+
+/* Sklopivi blok (Akontacija, način plaćanja, rate, komentar) — sve posle iznosa.
+   Otvara se klikom; ako je Ana sama otvori, ostaje otvorena i za sledeće porudžbine
+   u toj sesiji, a pri izmeni porudžbine koja već ima te podatke otvara se sama. */
+.collapse-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 16px; margin-bottom: 12px;
+  background: var(--section-bg); color: var(--accent);
+  font-size: 16px; font-weight: 700; text-align: left; border-radius: 12px;
+}
+.collapse-toggle:hover { background: #E4EEFB; }
+.collapse-toggle .chev { font-size: 13px; transition: transform .15s ease; }
+.collapse-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.collapse-body[hidden] { display: none; }
+
+/* Osnovni izgled <select> u popapima — ranije je stajao inline na svakom selectu,
+   sada je na jednom mestu (u formi porudžbine ga niže pregazi kompaktnija varijanta). */
+.modal select {
+  font-family: var(--font-body); font-size: 18px; padding: 14px;
+  border: 1px solid var(--border); border-radius: 14px;
+  background: var(--white); color: var(--text);
+}
+
+/* Naslov sekcije sa dugmetom u istom redu ("Okviri  [+ Dodaj okvir]") — dugme više
+   ne zauzima svoj red ispod liste, forma je za jedan red kraća po sekciji. */
+.section-heading.with-action {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 5px 8px 5px 14px;
+}
+#order-modal .section-heading.with-action .btn-secondary {
+  padding: 6px 12px; font-size: 14px; border-radius: 8px;
+}
+
+/* Izrada/Popust i kutija sa iznosom stoje jedno pored drugog umesto jedno ispod drugog. */
+.sum-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: end; margin-bottom: 12px; }
+@media (max-width: 700px) { .sum-row { grid-template-columns: 1fr; } }
+
+/* Naslov i prekidač Naočare/Kontaktna sočiva u istom redu — jedan red manje. */
+#order-modal .modal-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; padding-right: 40px; }
+#order-modal .modal-head h3 { margin-bottom: 0; padding-right: 0; white-space: nowrap; }
+#order-modal .modal-head .type-toggle { margin-bottom: 0; flex: 1; }
+#order-modal .collapse-toggle { padding: 8px 14px; margin-bottom: 10px; }
+#order-modal .modal-actions { margin-top: 12px; }
+#order-modal .modal-actions .btn-secondary,
+#order-modal .modal-actions .btn-primary { padding: 11px 24px; font-size: 17px; }
