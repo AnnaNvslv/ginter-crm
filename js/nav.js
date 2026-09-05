@@ -17,10 +17,10 @@ async function goToPatient(patientId, tab) {
 }
 
 // Prečica za brzi unos mnogo starih pacijenata: fizičko dugme desno od "1"
-// (Backquote — na EN rasporedu je to `~`, na RU rasporedu "ё"; e.code je isti bez
-// obzira na raspored tastature, pa prečica radi identično na oba). Otvara "Novi
-// pacijent" kad je aktivna sekcija Klijenti, van polja za unos i van otvorenog modala
-// — da se ne aktivira dok se kuca tekst koji sadrži taj znak.
+// (Backquote — na EN rasporedu je to `~`, na RU rasporedu "ё", na SR latiničnom "‚";
+// e.code je isti bez obzira na raspored tastature, pa prečica radi identično na svima).
+// Otvara "Novi pacijent" kad je aktivna sekcija Klijenti, van polja za unos i van
+// otvorenog modala — da se ne aktivira dok se kuca tekst koji sadrži taj znak.
 document.addEventListener('keydown', (e) => {
   if (e.code !== 'Backquote') return;
   const activeTag = document.activeElement && document.activeElement.tagName;
@@ -42,37 +42,44 @@ document.addEventListener('keydown', (e) => {
   guardAgainstLeakedShortcutChar();
 });
 
-// I posle preventDefault() na sam keydown, znak ovog tastera ipak zna da stigne u polje
-// "Ime" pošto se fokus premesti tamo asinhrono (openModal() koristi setTimeout) — na RU
-// rasporedu ovaj fizički taster kuca "ё" direktno (nije IME kompozicija kao kod
-// kineskog/japanskog unosa), pa provera samo na isComposing/insertCompositionText
-// (raniji pokušaj popravke) ne hvata ovo curenje: stiže kao običan "insertText" input
-// event, bez ikakvog prethodnog pravog keydown-a NA TOM POLJU.
+// Čišćenje znaka koji "procuri" iz prečice u polje Ime.
 //
-// Zato ovde ne gledamo tip input eventa uopšte — samo da li je pre njega na ovom polju
-// već registrovan pravi fizički keydown (Anin sledeći stvarni pritisak tastera). Ako
-// nije, curenje se briše. Prozor od ~200ms (ne samo "prvi sledeći input") pokriva i
-// slučaj kad znak stigne u dva navrata (prazan pa pravi event).
+// Taster levo od "1" je na srpskoj (i hrvatskoj) latiničnoj raspored MRTAV TASTER
+// (dead key): sam po sebi ne ispisuje ništa, nego čeka sledeće slovo da se spoje. Kad
+// se spajanje ne desi (npr. sledeće slovo je "V"), OS ispusti taj znak samostalno —
+// kao "‚" (U+201A). Zato preventDefault() na keydown ovde ne pomaže: znak ne dolazi iz
+// tog pritiska, nego ga OS ubaci ZAJEDNO SA PRVIM STVARNIM SLOVOM koje Ana otkuca u
+// novootvorenom polju (otud "‚Vuk" umesto "Vuk"). Na ruskom rasporedu isti taster daje
+// "ё", na engleskom "`" — svi ti znaci mogu da procure na isti način.
+//
+// Raniji pokušaj je brisao samo unos koji stigne PRE prvog pravog keydown-a, pa ovaj
+// slučaj nije hvatao (znak stiže u istom potezu sa slovom). Sada, kratko nakon
+// otvaranja forme prečicom, sa početka teksta skidamo eventualni procureli znak —
+// ostatak (stvarno otkucano ime) ostaje netaknut. Skida se samo sa POČETKA i samo u
+// prvih nekoliko sekundi posle prečice, pa normalan unos ne može da strada.
+const SHORTCUT_LEAK_CHARS = /^[`~ё‚‛„‘’¸¨°'"]+/;
+const SHORTCUT_GUARD_MS = 5000;
+
 function guardAgainstLeakedShortcutChar() {
   setTimeout(() => {
-    const field = document.getElementById('patient-form-first-name');
-    if (!field) return;
-    let realKeySeen = false;
-    let timer;
-    const cleanup = () => {
-      field.removeEventListener('keydown', onKeydown, true);
-      field.removeEventListener('input', onInput);
-      clearTimeout(timer);
-    };
-    const onKeydown = () => {
-      realKeySeen = true;
-      cleanup();
-    };
-    const onInput = () => {
-      if (!realKeySeen) field.value = '';
-    };
-    field.addEventListener('keydown', onKeydown, { capture: true });
-    field.addEventListener('input', onInput);
-    timer = setTimeout(cleanup, 200);
+    const form = document.getElementById('patient-form');
+    if (!form) return;
+    const fields = Array.from(form.querySelectorAll('input[type="text"]'));
+    if (!fields.length) return;
+
+    const stop = () => fields.forEach(f => f.removeEventListener('input', strip));
+    function strip(e) {
+      const el = e.target;
+      const cleaned = el.value.replace(SHORTCUT_LEAK_CHARS, '');
+      if (cleaned !== el.value) {
+        el.value = cleaned;
+        if (typeof el.setSelectionRange === 'function') el.setSelectionRange(cleaned.length, cleaned.length);
+        // Provera duplikata je već pozvana sa "prljavom" vrednošću — ponavljamo je sa čistom.
+        if (typeof checkDuplicatePatient === 'function') checkDuplicatePatient();
+      }
+    }
+
+    fields.forEach(f => f.addEventListener('input', strip));
+    setTimeout(stop, SHORTCUT_GUARD_MS);
   }, 0);
 }
