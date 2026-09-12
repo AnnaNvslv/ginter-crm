@@ -728,6 +728,7 @@ const debouncedOrdersSearch = debounce(() => loadOrdersSection(true));
 function clearOrdersFilters() {
   document.getElementById('orders-search-name').value = '';
   document.getElementById('orders-search-date').value = '';
+  document.getElementById('orders-search-ordernum').value = '';
   loadOrdersSection(true);
 }
 
@@ -737,6 +738,7 @@ async function loadOrdersSection(reset = false) {
 
   const nameFilter = document.getElementById('orders-search-name').value.trim();
   const dateFilter = document.getElementById('orders-search-date').value;
+  const orderNumFilter = document.getElementById('orders-search-ordernum').value.trim();
 
   let patientIds = null;
   if (nameFilter) {
@@ -751,6 +753,7 @@ async function loadOrdersSection(reset = false) {
     .range(ordersSectionOffset, ordersSectionOffset + ORDERS_PAGE - 1);
   if (patientIds) query = query.in('patient_id', patientIds);
   if (dateFilter) query = query.eq('order_date', dateFilter);
+  if (orderNumFilter) query = query.ilike('envelope_number', `%${orderNumFilter}%`);
 
   const { data, error } = await query;
   if (error) { toast('Greška pri učitavanju porudžbina', true); return; }
