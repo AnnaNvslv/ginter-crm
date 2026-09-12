@@ -53,6 +53,7 @@
       <div class="filters-row">
         <input type="text" id="orders-search-name" placeholder="Ime pacijenta..." oninput="debouncedOrdersSearch()">
         <input type="date" id="orders-search-date" onchange="debouncedOrdersSearch()">
+        <input type="text" id="orders-search-ordernum" placeholder="Broj porudžbine..." oninput="debouncedOrdersSearch()">
         <button class="btn-secondary" onclick="clearOrdersFilters()">Poništi filtere</button>
       </div>
       <div id="orders-table-wrap"></div>
