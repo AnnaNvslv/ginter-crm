@@ -41,10 +41,16 @@ function groupPatients(list) {
   return groups;
 }
 
+// Pretraga radi po svim rečima unetim u polje (u bilo kom redosledu), i pretražuje
+// ime, prezime, telefon i napomene (notes) — npr. "stevica buzarov" ili "0641234567"
+// ili deo teksta iz napomena sve pronalaze istog pacijenta, bez obzira na redosled reči.
 function renderPatientList(filter = '') {
-  const f = filter.trim().toLowerCase();
-  const filtered = f
-    ? currentPatients.filter(p => fullName(p).toLowerCase().includes(f) || (p.phone || '').includes(f))
+  const tokens = filter.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const filtered = tokens.length
+    ? currentPatients.filter(p => {
+        const haystack = [p.first_name, p.last_name, p.phone, p.notes].filter(Boolean).join(' ').toLowerCase();
+        return tokens.every(t => haystack.includes(t));
+      })
     : currentPatients;
 
   const sorted = [...filtered].sort((a, b) => sortKey(a).localeCompare(sortKey(b), 'sr'));
