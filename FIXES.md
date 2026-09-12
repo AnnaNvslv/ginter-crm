@@ -85,12 +85,12 @@ SQL выполнен: `prescriptions` получила `bc`, `dia`, `checked_by`
 Запушено: `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `crm.html`.
 
 ## 2026-08-01 (часть 3 — bugfix + SQL прогнан + автоподсказки за stakla)
-**Bugfix**: заказ с контактными линзами не сохранялся — поле BC (`orders.cl_bc`) имело тип `numeric`, а вносилось через запятую ("8,6"), что невалидно для numeric. Исправлено миграцией `ALTER TABLE orders ALTER COLUMN cl_bc TYPE text` (как и `prescriptions.bc`, который уже был text).
+**Bugfix**: заказ с контактными линзами не сохранялся — поле BC (`orders.cl_bc`) имело тип `numeric`, а вносилось через запятую ("8,6"), что невалидно за numeric. Исправлено миграцией `ALTER TABLE orders ALTER COLUMN cl_bc TYPE text` (как и `prescriptions.bc`, который уже был text).
 
 **SQL прогнан**: `orders.discount_percent` (numeric, default 0), `prescriptions.rx_date` (date, default CURRENT_DATE), `order_lenses.lens_index` (text), `order_lenses.lens_coating` (text).
 
 - **Naziv stakla — automatski predlozi**: pri kliku/kucanju u polje "naziv stakla" u formi porudžbine nudi se `<datalist>` sa svim nazivima koji su ikad uneti (kod bilo kog pacijenta, bilo kog zaposlenog) — ne treba ponovo kucati isti naziv. Isto i za nova polja **Indeks** (npr. 1.5/1.6/1.67/1.74) i **Premaž** (npr. AR/UV/blue) — kolone `order_lenses.lens_index` / `lens_coating`, učitavaju se u `loadLensAutocompleteData()` (`js/orders.js`), pune `<datalist>` elemente definisane u `crm.html` (`lens-name-list`, `lens-index-list`, `lens-coating-list`)
-- **Red stakla u formi porudžbine redizajniran**: naziv stakla je sada u svom širokom redu (gore, pored namene), indeks/premaž u sredini, cena/popust/kol. na dnu — umesto jednog zbijenog reda sa 6 uskih polja (`renderLensRows()` u `js/orders.js`)
+- **Red stakla u formi porudžbine redizajniran**: naziv stakla je sada u svom širokom redu (gore, pored namene), indeks/premaz u sredini, cena/popust/kol. na dnu — umesto jednog zbijenog reda sa 6 uskih polja (`renderLensRows()` u `js/orders.js`)
 - Prikaz stakala u karčici porudžbine (`renderOrderCard` → `lensDescriptor()`) sada uključuje indeks i premaž pored naziva, ako su uneti
 
 Запушено (JS/HTML): `crm.html`, `js/orders.js`.
@@ -199,6 +199,16 @@ Cilj: da cela forma porudžbine stane na ekran (1308×765) bez skrolovanja.
 Izmereno u Chromiumu na 1308×765 (Anin ekran): prazna forma 1315px → 606px, tipična (1 recept + okvir + stakla) 1493px → 720px — obe sada staju bez skrolovanja; porudžbina za kontaktna sočiva 721px, takođe bez skrola. Sa dva recepta (2 okvira + 2 stakla) forma i dalje skroluje (919px) — objektivno duža forma. Provereno i da lista stakala, izbor iz nje sa automatskom cenom, Enter-lanac posle cene, prebacivanje na sočiva, lanac recept→porudžbina i izmena postojeće porudžbine rade nepromenjeno (11 provera).
 
 Zapušeno: `crm.html`, `css/crm.css`, `js/orders.js`, `FIXES.md`.
+
+## 2026-09-12 (ispravka datuma recepata — samo podaci, bez izmena koda/šeme)
+
+Anna je primetila da datum recepta ponekad ne odgovara stvarnosti (verovatno ostajao today() umesto da se ručno promeni), dok su datum porudžbine i datum posete pacijenta ispravni.
+
+- **285 recepata** imalo je `rx_date` **posle** datuma najranije porudžbine u kojoj taj recept figuriše (kroz `order_prescriptions` ili staro `orders.prescription_id`) — znači recept je upisan sa današnjim datumom umesto pravim datumom pregleda. Ispravljeno: `rx_date` → datum te najranije porudžbine (uvek se koristi najranija, ako recept figuriše u više porudžbina). Raspon razlike pre ispravke: 4–930 dana.
+- **7 datuma sa iskvarenim upisom godine** (npr. `20225-12-08`, `0024-06-06`, `32026-02-12`, `12025-12-19`) — verovatno greška pri kucanju/unosu u polje datuma. Nađeno i ispravljeno unakrsnom proverom sa povezanom porudžbinom/receptom iste posete: 4× `prescriptions.rx_date`, 3× `orders.order_date`.
+- **5 datuma posete pacijenta** (`patients.visit_date`) sa istim tipom greške — ispravljeno na isti način.
+- ⚠️ **Za proveru**: `patients.visit_date` ("datum posete", koristi se kao datum prvog obraćanja) nije uvek pouzdan — nađeno par slučajeva gde ne odgovara stvarnoj istoriji recepata/porudžbina pacijenta (npr. Nenad Milošević: recepti iz 2024/2025, `visit_date` = 2026-08-01; Zora Žutić: `visit_date` je 9 dana POSLE recepta). Nije automatski ispravljeno — pravilo koje bi trebalo primeniti nije bilo jasno definisano, ostaje na Aninu odluku.
+- Nikakve SQL migracije nisu izvršene — samo `UPDATE` na postojećim redovima, direktno preko Supabase MCP-a.
 
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
