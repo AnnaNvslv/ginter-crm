@@ -266,3 +266,19 @@
 #order-modal .modal-actions { margin-top: 12px; }
 #order-modal .modal-actions .btn-secondary,
 #order-modal .modal-actions .btn-primary { padding: 11px 24px; font-size: 17px; }
+
+/* ═══ Analitika ═══ */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.metric-card { background: var(--section-bg); border-radius: var(--radius); padding: 16px 18px; }
+.metric-card .label { font-size: 13px; color: var(--text-light); font-weight: 600; margin-bottom: 6px; }
+.metric-card .value { font-size: 26px; font-weight: 700; color: var(--accent); }
+.metric-card .value small { font-size: 14px; font-weight: 600; color: var(--text-light); }
+
+.analytics-section-title { font-size: 17px; font-weight: 700; margin: 28px 0 12px; }
+.analytics-section-title:first-of-type { margin-top: 0; }
+.analytics-section-title .sub { font-weight: 400; color: var(--text-light); font-size: 14px; }
+.chart-wrap { position: relative; width: 100%; }
+.analytics-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .analytics-grid-2 { grid-template-columns: 1fr; } }
+.legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--text-light); }
+.legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
