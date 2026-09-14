@@ -8,6 +8,7 @@ function switchSection(section) {
   if (section === 'orders' && !ordersLoaded) loadOrdersSection(true);
   if (section === 'exams' && !examsLoaded) loadExamsSection(true);
   if (section === 'debts') loadDebtsSection();
+  if (section === 'analitika' && !analyticsLoaded) loadAnalyticsSection();
 }
 
 async function goToPatient(patientId, tab) {
