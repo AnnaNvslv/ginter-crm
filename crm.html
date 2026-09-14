@@ -21,6 +21,7 @@
         <div class="nav-tab" data-section="orders" onclick="switchSection('orders')">Porudžbine</div>
         <div class="nav-tab" data-section="exams" onclick="switchSection('exams')">Pregledi</div>
         <div class="nav-tab" data-section="debts" onclick="switchSection('debts')">Dugovanja<span class="count-badge" id="debts-count" style="display:none;"></span></div>
+        <div class="nav-tab" data-section="analitika" onclick="switchSection('analitika')">Analitika</div>
       </div>
     </div>
     <div class="topnav-user">
@@ -78,6 +79,10 @@
       </div>
       <div id="debts-table-wrap"></div>
     </div>
+  </div>
+
+  <div class="section-body" id="section-analitika">
+    <div class="full-view" id="analytics-content"></div>
   </div>
 </div>
 
@@ -375,6 +380,8 @@
 <script src="js/patients.js"></script>
 <script src="js/prescriptions.js"></script>
 <script src="js/orders.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="js/analytics.js"></script>
 <script src="js/nav.js"></script>
 <script>
   requireAuth();
