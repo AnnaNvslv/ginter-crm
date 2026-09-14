@@ -633,8 +633,23 @@ async function deleteInstallment(id) {
   await loadInstallments();
 }
 
+let savingOrder = false;
+
 async function saveOrderForm(e) {
   e.preventDefault();
+  // Zaštita od dvostrukog unosa: ako je klik na "Sačuvaj" (ili Enter u polju)
+  // registrovan dvaput pre nego što prvi upit stigne do baze — pri brzom unosu
+  // više porudžbina zaredom to se dešavalo — druga prijava se ovde tiho ignoriše.
+  if (savingOrder) return;
+  savingOrder = true;
+  try {
+    await saveOrderFormInner(e);
+  } finally {
+    savingOrder = false;
+  }
+}
+
+async function saveOrderFormInner(e) {
   const id = document.getElementById('order-form-id').value;
 
   const payload = {
