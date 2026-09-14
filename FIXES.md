@@ -210,6 +210,23 @@ Anna je primetila da datum recepta ponekad ne odgovara stvarnosti (verovatno ost
 - ⚠️ **Za proveru**: `patients.visit_date` ("datum posete", koristi se kao datum prvog obraćanja) nije uvek pouzdan — nađeno par slučajeva gde ne odgovara stvarnoj istoriji recepata/porudžbina pacijenta (npr. Nenad Milošević: recepti iz 2024/2025, `visit_date` = 2026-08-01; Zora Žutić: `visit_date` je 9 dana POSLE recepta). Nije automatski ispravljeno — pravilo koje bi trebalo primeniti nije bilo jasno definisano, ostaje na Aninu odluku.
 - Nikakve SQL migracije nisu izvršene — samo `UPDATE` na postojećim redovima, direktno preko Supabase MCP-a.
 
+## 2026-09-14 (proširena pretraga, pretraga porudžbina po broju, nova sekcija Analitika)
+
+- **Pretraga pacijenata (Klijenti)**: sada pretražuje po SVIM upisanim rečima (u bilo kom redosledu, npr. "Petrović Ana" nalazi i "Ana Petrović"), i pored imena/prezimena i telefona pretražuje i **napomene** (`patients.notes`) — `renderPatientList()` u `js/patients.js`, token-po-token AND poklapanje.
+- **Porudžbine (globalna tabela)**: nov filter "Broj porudžbine" pored postojeće pretrage po imenu i datumu, pretražuje `orders.envelope_number` — `crm.html`, `js/orders.js` (`loadOrdersSection`, `clearOrdersFilters`).
+- **Nova sekcija Analitika**: promet po mesecu/godini (grafik sa prekidačem Mesečno/Godišnje), promet po nameni recepta, udeo okviri/stakla/izrada, top 5 stakala po prometu, naočare vs kontaktna sočiva, način plaćanja, povratak pacijenata (% sa više od 1 porudžbine + top pacijenti po broju porudžbina i potrošnji), recepti bez porudžbine (potencijalni pozivi), prosečno vreme od pregleda do porudžbine, statistika popusta. Mockup odobren pre pisanja koda (pravilo projekta) — `crm.html` (nov tab + sekcija, Chart.js 4.4.1), `js/analytics.js` (nov fajl), `js/nav.js` (`loadAnalyticsSection()` trigger), `css/crm.css`.
+
+## 2026-09-14 (deo 2 — bugfix dvostrukog unosa porudžbine + izveštaj po mesecu u Analitici)
+
+Anna je primetila neverovatno visok promet za septembar (637.570 din. u prvih 11 dana) i posumnjala na grešku.
+
+- **Nađen i ispravljen uzrok**: `saveOrderForm()` u `js/orders.js` nije imao zaštitu od dvostrukog unosa — pri brzom unosu (dupli klik na "Sačuvaj", ili dupli Enter) forma je znala da pošalje DVA `insert`-a za istu porudžbinu, u razmaku od par sekundi. Nađeno preko SQL upita (ista `patient_id` + `order_date` + `total_amount`, `created_at` u razmaku <2s): **14 dupliranih porudžbina** u bazi, ukupno 137.900 din. viška prometa (od toga 20.800 din. u septembru — objašnjava deo, ne ceo skok). Sve 14 su ručno pronađene, unakrsno provereno (isti pacijent/datum/iznos, kreirano u istom sekundu) i soft-obrisane (`deleted_at`) direktno u Supabase-u — porudžbine ostaju u bazi radi istorije, samo se ne računaju u analitiku/izveštaje.
+- **Fix u kodu**: `saveOrderForm()` sada ima guard (`savingOrder` promenljiva) — dok je jedan zahtev za čuvanje u toku, sledeći klik/Enter se tiho ignoriše dok se prvi ne završi. Ovo sprečava da se problem ponovi ubuduće — `js/orders.js`.
+- **Analitika — izveštaj po mesecu**: pod grafom prometa dodat padajući spisak svih meseci koji imaju bar jednu porudžbinu (ne samo poslednjih 12), a ispod njega detaljna tabela porudžbina za izabrani mesec (datum, pacijent, tip, broj, način plaćanja, iznos) sa ukupnim prometom/brojem/prosekom za taj mesec — da Anna sama može da prekontroliše bilo koji mesec red po red. Porudžbine koje ličе na duplikat (isti pacijent+datum+iznos kao druga porudžbina u istom mesecu) su vizuelno označene (crvenkasta pozadina + ⚠️) da upadnu u oči ako se problem ponovo pojavi — `js/analytics.js` (`renderMonthDetail()`), `css/crm.css` (`.analytics-month-select`, `.row-warn`).
+- Preostali (ne-duplirani) skok u septembru je realan promet, samo neuobičajeno gust unos (48 pacijenata u 11 dana) — vidljiv i proverljiv sada kroz novi mesečni izveštaj.
+
+Zapušeno: `js/orders.js`, `js/analytics.js`, `css/crm.css`, `FIXES.md`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
