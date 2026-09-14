@@ -282,3 +282,18 @@
 @media (max-width: 900px) { .analytics-grid-2 { grid-template-columns: 1fr; } }
 .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--text-light); }
 .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+/* Izbor meseca za detaljan izveštaj — obična select kontrola, dovoljno uska da ne
+   deluje kao filter na celu sekciju. */
+.analytics-month-select {
+  display: block; width: auto; min-width: 220px; margin-bottom: 10px;
+  padding: 10px 14px; font-size: 16px; font-family: var(--font-body);
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--white); color: var(--text);
+}
+
+/* Red porudžbine koji izgleda kao verovatan duplikat (isti pacijent/datum/iznos
+   upisan dvaput, tipično od dvostrukog klika na "Sačuvaj") — blago crvenkasta
+   pozadina da upadne u oči u listi, bez da bude alarmantno crvena. */
+.data-table tbody tr.row-warn td { background: #FDF1F0; }
+.data-table tbody tr.row-warn:hover td { background: #FBE4E2; }
