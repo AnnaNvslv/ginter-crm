@@ -311,8 +311,21 @@ async function quickAddOrder() {
 
 async function deletePatient() {
   if (!confirm('Obrisati pacijenta? Ovo se može vratiti samo preko baze podataka.')) return;
-  const { error } = await sb.from('patients').update({ deleted_at: new Date().toISOString() }).eq('id', activePatientId);
+  const id = activePatientId;
+  const { error } = await sb.from('patients').update({ deleted_at: new Date().toISOString() }).eq('id', id);
   if (error) { toast('Greška pri brisanju', true); return; }
+
+  // Kad se pacijent obriše, njegove porudžbine ostaju u bazi ali postaju "duh" —
+  // patient_id i dalje pokazuje na obrisanog pacijenta, pa ih Analitika/liste ne mogu
+  // imenovati (ime se prikazuje kao "—") a i dalje ulaze u ukupan promet.
+  // Zato se ovde iste te porudžbine takođe soft-brišu, da ne kvare izveštaje.
+  const { error: ordersError } = await sb
+    .from('orders')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('patient_id', id)
+    .is('deleted_at', null);
+  if (ordersError) { toast('Pacijent obrisan, ali porudžbine nisu ažurirane — proveri Analitiku', true); }
+
   activePatientId = null;
   document.getElementById('content').innerHTML = '<div class="empty-state">Izaberite pacijenta sa leve strane</div>';
   showPatientList();
