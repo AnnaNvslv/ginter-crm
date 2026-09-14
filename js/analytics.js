@@ -8,13 +8,20 @@ let analyticsSplitChart = null;
 // prebacivanju perioda samo ponovo iscrta graf, bez ponovnog upita ka bazi.
 let analyticsTrendData = { monthLabels: [], monthValues: [], yearLabels: [], yearValues: [] };
 
+// Sirove porudžbine (sa imenom pacijenta) i mapa po mesecu — koriste se za detaljan
+// mesečni izveštaj (padajuća lista meseci ispod grafa prometa), bez ponovnog upita
+// ka bazi pri promeni izabranog meseca.
+let analyticsOrdersFlat = [];
+let analyticsMonthMap = {};
+let analyticsSelectedMonth = null;
+
 async function loadAnalyticsSection() {
   analyticsLoaded = true;
   const wrap = document.getElementById('analytics-content');
   wrap.innerHTML = '<div class="empty-state" style="height:auto;padding:60px;">Učitavanje analitike...</div>';
 
   const [ordersRes, framesRes, lensesRes, opRes, rxRes, patientsRes] = await Promise.all([
-    sb.from('orders').select('id, patient_id, order_date, order_type, total_amount, discount_percent, izrada_price, payment_method').is('deleted_at', null),
+    sb.from('orders').select('id, patient_id, order_date, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method').is('deleted_at', null),
     sb.from('order_frames').select('order_id, purpose, price, is_client'),
     sb.from('order_lenses').select('order_id, purpose, lens_name, price_unit, discount, qty'),
     sb.from('order_prescriptions').select('order_id, prescription_id'),
@@ -55,6 +62,33 @@ async function loadAnalyticsSection() {
     (rxDatesByOrder[link.order_id] ??= []).push(rx.rx_date);
   });
 
+  // ── Priprema za detaljan mesečni izveštaj ──
+  // Duplikat se ovde označava po kombinaciji pacijent + datum + iznos — u praksi
+  // se tako ispoljava dvostruki klik na "Sačuvaj" (ista porudžbina upisana dvaput
+  // u razmaku od par sekundi); realno dupliranih porudžbina (npr. druge naočare
+  // istog dana za istu osobu, ali druge cene) ovo ne pogađa.
+  const dupKeyCount = {};
+  orders.forEach(o => {
+    if (!o.order_date) return;
+    const key = `${o.patient_id}|${o.order_date}|${Number(o.total_amount) || 0}`;
+    dupKeyCount[key] = (dupKeyCount[key] || 0) + 1;
+  });
+  analyticsOrdersFlat = orders
+    .filter(o => o.order_date)
+    .map(o => {
+      const key = `${o.patient_id}|${o.order_date}|${Number(o.total_amount) || 0}`;
+      return {
+        id: o.id, date: o.order_date, ym: o.order_date.slice(0, 7),
+        envelope: o.envelope_number || '', type: o.order_type,
+        amount: Number(o.total_amount) || 0, payment: o.payment_method || '',
+        patientId: o.patient_id, patientName: patientsMap[o.patient_id] ? fullName(patientsMap[o.patient_id]) : '—',
+        suspectDup: dupKeyCount[key] > 1,
+      };
+    })
+    .sort((a, b) => a.date < b.date ? 1 : -1);
+  analyticsMonthMap = {};
+  analyticsOrdersFlat.forEach(o => { (analyticsMonthMap[o.ym] ??= []).push(o); });
+
   const stats = computeAnalytics({ orders, frames, lenses, framesByOrder, lensesByOrder, patientsMap, prescriptions, rxDatesByOrder, linkedPrescriptionIds });
   renderAnalytics(stats);
 }
@@ -92,6 +126,10 @@ function computeAnalytics(ctx) {
   const monthValues = monthKeys.map(k => monthMap[k] || 0);
   const yearLabels = Object.keys(yearMap).sort();
   const yearValues = yearLabels.map(y => yearMap[y]);
+
+  // Svi meseci koji imaju bar jednu porudžbinu (za padajuću listu detaljnog izveštaja),
+  // od najnovijeg ka najstarijem — nije ograničeno na poslednjih 12 kao grafik gore.
+  const allMonthKeys = Object.keys(monthMap).sort().reverse();
 
   // ── Promet po nameni ──
   const purposeRevenue = {};
@@ -177,7 +215,7 @@ function computeAnalytics(ctx) {
 
   return {
     totalRevenue, orderCount, avgOrder, clientFramePct, clientFrameOrdersCount: clientFrameOrders.length, glassesOrdersCount: glassesOrders.length,
-    monthLabels, monthValues, yearLabels, yearValues,
+    monthLabels, monthValues, yearLabels, yearValues, allMonthKeys,
     purposeEntries,
     framesTotal, lensesTotalSum, izradaTotal,
     topLenses,
@@ -195,6 +233,12 @@ function renderAnalytics(s) {
 
   const purposeLabels = s.purposeEntries.map(([p]) => p);
   const purposeValues = s.purposeEntries.map(([, v]) => v);
+
+  const monthOptionNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+  const monthOptionLabel = (ym) => `${monthOptionNames[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
+  if (!analyticsSelectedMonth || !s.allMonthKeys.includes(analyticsSelectedMonth)) {
+    analyticsSelectedMonth = s.allMonthKeys[0] || null;
+  }
 
   const wrap = document.getElementById('analytics-content');
   wrap.innerHTML = `
@@ -214,6 +258,12 @@ function renderAnalytics(s) {
     <div class="chart-wrap" style="height:240px;margin-bottom:8px;">
       <canvas id="analytics-chart-trend" role="img" aria-label="Promet po mesecima ili po godinama"></canvas>
     </div>
+
+    <div class="analytics-section-title">Izveštaj po mesecu <span class="sub">— detaljna lista porudžbina, za proveru brojki</span></div>
+    <select id="analytics-month-select" class="analytics-month-select" onchange="analyticsSelectedMonth=this.value;renderMonthDetail();">
+      ${s.allMonthKeys.map(ym => `<option value="${ym}" ${ym === analyticsSelectedMonth ? 'selected' : ''}>${monthOptionLabel(ym)}</option>`).join('') || '<option>Nema podataka</option>'}
+    </select>
+    <div id="analytics-month-detail"></div>
 
     <div class="analytics-grid-2">
       <div>
@@ -286,6 +336,47 @@ function renderAnalytics(s) {
   renderTrendChart();
   renderPurposeChart(purposeLabels, purposeValues);
   renderSplitChart(s.lensesTotalSum, s.framesTotal, s.izradaTotal);
+  renderMonthDetail();
+}
+
+// Detaljan izveštaj za izabrani mesec: sve porudžbine tog meseca red po red, sa
+// upozorenjem (crvenkasta pozadina + ikonica) na verovatne duple unose (isti pacijent,
+// isti datum, isti iznos — klasičan trag dvostrukog klika na "Sačuvaj").
+function renderMonthDetail() {
+  const el = document.getElementById('analytics-month-detail');
+  if (!el) return;
+  const rows = analyticsSelectedMonth ? (analyticsMonthMap[analyticsSelectedMonth] || []) : [];
+  const total = rows.reduce((s, o) => s + o.amount, 0);
+  const dupCount = rows.filter(o => o.suspectDup).length;
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state" style="height:auto;padding:30px;">Nema porudžbina za izabrani mesec</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="metric-grid" style="margin:14px 0;">
+      <div class="metric-card"><div class="label">Promet u mesecu</div><div class="value">${fmtMoney(total)}</div></div>
+      <div class="metric-card"><div class="label">Broj porudžbina</div><div class="value">${rows.length}</div></div>
+      <div class="metric-card"><div class="label">Prosečna vrednost</div><div class="value">${fmtMoney(rows.length ? Math.round(total / rows.length) : 0)}</div></div>
+      ${dupCount ? `<div class="metric-card"><div class="label">Sumnjivi duplikati</div><div class="value" style="color:var(--danger);">${dupCount}</div></div>` : ''}
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Datum</th><th>Pacijent</th><th>Tip</th><th>Br.</th><th>Način plaćanja</th><th class="num">Iznos</th></tr></thead>
+      <tbody>
+        ${rows.map(o => `
+          <tr class="${o.suspectDup ? 'row-warn' : ''}" onclick="goToPatient('${o.patientId}','orders')" title="${o.suspectDup ? 'Isti pacijent, datum i iznos kao druga porudžbina — proveriti da nije duplo uneto' : ''}">
+            <td>${fmtDate(o.date)}</td>
+            <td class="link">${o.patientName}</td>
+            <td>${o.type === 'glasses' ? 'Naočare' : 'Sočiva'}</td>
+            <td>${o.envelope || '—'}</td>
+            <td>${o.payment || '—'}</td>
+            <td class="num">${fmtMoney(o.amount)}${o.suspectDup ? ' ⚠️' : ''}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 function setAnalyticsPeriod(period) {
