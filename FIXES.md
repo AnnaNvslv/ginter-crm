@@ -227,6 +227,17 @@ Anna je primetila neverovatno visok promet za septembar (637.570 din. u prvih 11
 
 Zapušeno: `js/orders.js`, `js/analytics.js`, `css/crm.css`, `FIXES.md`.
 
+## 2026-09-14 (deo 3 — bugfix: obrisan pacijent ostavljao "duh" porudžbine u Analitici)
+
+Anna je u novom mesečnom izveštaju primetila redove bez imena pacijenta ("—"), iako su imali broj porudžbine i iznos plaćanja.
+
+- **Uzrok**: `deletePatient()` u `js/patients.js` je samo soft-brisao pacijenta (`patients.deleted_at`), ali NIJE dirao njegove porudžbine. Kako `orders.patient_id` ostaje da pokazuje na obrisanog pacijenta, a Analitika/liste učitavaju samo aktivne (nepobrisane) pacijente za spajanje imena, takve porudžbine su ostajale "duhovi" — vidljive, sa realnim iznosom i brojem, ali bez imena — i dalje su ulazile u ukupan promet i sve izveštaje.
+- **Nađeno u bazi**: 12 takvih porudžbina, sve vezane za pacijente koje je Anna već ranije obrisala kao test/probne unose (dva "Anna Novoselova" test-naloga, "Ervin Ginter" kao test-pacijent, "222"/"222", "test"/"test", "Maja Beric" — dupliran test unos). Ukupno 143.766 din. lažnog prometa je ušlo u analitiku kroz ove porudžbine (raspon jun–avgust 2026). Sve 12 su soft-obrisane (`deleted_at`) direktno u Supabase-u — ostaju u bazi radi istorije, ali se više ne broje.
+- **Fix u kodu**: `deletePatient()` sada, odmah posle brisanja pacijenta, soft-briše i sve njegove (još nepobrisane) porudžbine — `js/patients.js`. Ubuduće brisanje test-pacijenta ili pravog pacijenta neće ostavljati "duh" porudžbine u Analitici.
+- Napomena: `prescriptions` i `installments` nemaju kolonu za soft-delete, pa recepti/rate obrisanog pacijenta ostaju u bazi kao i do sada (nisu uključeni ni u jedan trenutni izveštaj po prometu, pa nisu praktičan problem) — ako zatreba, može se dodati istim `deleted_at` obrascem kasnije.
+
+Zapušeno: `js/patients.js`, `FIXES.md`.
+
 ## TODO (Security hardening — сделать перед сдачей в эксплуатацию)
 - Закрыть прямое чтение таблицы `users` (сейчас password читается через select) — перенести логин на RPC/Edge Function
 - Ужесточить RLS policies на `patients`, `prescriptions`, `orders`, `order_frames`, `order_lenses`, `installments`, `order_prescriptions`, `lens_catalog` (сейчас `using(true)` / без RLS — anon key технически может читать/писать всё напрямую)
