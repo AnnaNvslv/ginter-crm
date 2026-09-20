@@ -1,15 +1,12 @@
 async function login(name, password) {
-  const { data, error } = await sb
-    .from('users')
-    .select('id, name, role, password')
-    .eq('name', name)
-    .single();
+  const { data, error } = await sb.rpc('verify_login', { p_name: name, p_password: password });
 
-  if (error || !data || data.password !== password) {
+  if (error || !data || !data.length) {
     return { ok: false };
   }
 
-  localStorage.setItem('ginter_user', JSON.stringify({ id: data.id, name: data.name, role: data.role }));
+  const user = data[0];
+  localStorage.setItem('ginter_user', JSON.stringify({ id: user.id, name: user.name, role: user.role }));
   return { ok: true };
 }
 
