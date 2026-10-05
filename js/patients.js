@@ -304,9 +304,17 @@ async function quickAddPrescription() {
   openAddPrescriptionModal();
 }
 
+// "+ Porudžbina" (postojeći pacijent, bez novog recepta): odmah se povezuje poslednji
+// uneti recept — svi recepti sa najnovijim datumom (npr. za daljinu + za blizinu iste posete).
 async function quickAddOrder() {
-  await switchTab('orders');
-  await openAddOrderModal();
+  const { data } = await sb.from('prescriptions').select('id, rx_date')
+    .eq('patient_id', activePatientId)
+    .order('rx_date', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(20);
+  const rows = data || [];
+  const ids = rows.length ? rows.filter(r => r.rx_date === rows[0].rx_date).map(r => r.id) : [];
+  await openOrderWithPrescriptions(ids);
 }
 
 async function deletePatient() {
