@@ -246,3 +246,22 @@ Zapušeno: `js/patients.js`, `FIXES.md`.
 ## TODO (функционал)
 - [ ] Обсудить дальнейшие доработки с Анной
 - [ ] Списки namena для окон/стёкол (`PURPOSES` в utils.js: za daljinu/za blizinu/za kompjuter/za stalno nošenje/progresivna/bifokalna) и для recepata (za daljinu/za blizinu/za računar/progresivno/kontaktna sočiva) исторически разные наборы строк — из-за этого группировка в карточке заказа иногда не находит совпадение (напр. "za kompjuter" vs "za računar"). Стоит унифицировать оба списка на один общий набор значений
+
+## 2026-10-05 — форма заказа v2 (SQL выполнен Анной)
+SQL (Supabase SQL Editor, проект `flxewreibnkyfoccfjtg`): `prescriptions.rx_from_client_words`, `prescriptions.rx_from_glasses` (boolean); `order_frames.comment`; `order_lenses.comment`, `order_lenses.eye` (OD/OS); `orders.cl_amount` (сумма КЛ до скидки в комбинированном заказе); новая таблица `order_cl_items` (несколько упаковок КЛ в заказе, RLS "allow all"); `lens_catalog.kind` — разрешены `frame` и `cl`.
+
+- **Рецепт для близи из Add**: «+ Dodaj još recept» после рецепта с Add — Sph(OD/OS) = Sph + Add, Cyl/Ax/призма копируются, PD − 2 мм (монокулярный 32/32 → 31/31). Запятая/точка сохраняются как введены, `pl` = 0. Если Sph не распознан — оставляется исходный + предупреждение
+- **Источник рецепта**: галочки «Po rečima klijenta» и «Po naočarima» — отдельной строкой после Ervin/Anna/Bojana, Enter их пропускает (используются редко); бейджи в карточке рецепта
+- **«+ Novi recept» в форме заказа**: обычный попап рецепта поверх заказа (`#rx-modal.over-order`), после «Sačuvaj» рецепт(ы) привязываются к открытому заказу (`attachNewPrescriptionsToOrder`). Старая кнопка переименована в «+ Postojeći recept»
+- **Комментарии** под каждой оправой и под каждой парой линз (`enter-skip`)
+- **«Primeni recept»** на каждом рецепте → новый заказ с этим рецептом (`openOrderWithPrescriptions`)
+- **«+ Porudžbina» / «+ Nova porudžbina»** → сразу привязаны рецепты с последней датой (`quickAddOrder`)
+- **Enter**: фокус на дате → номер → шифр оправы (рецепты, назначения, «klijentov», комментарии, popust — пропускаются)
+- **Комбинированный заказ** (`order_type = 'combined'`, кнопка «👓 + 👁 Oba»): очки + КЛ в одном заказе; включается автоматически, если привязаны рецепты и на очки, и на КЛ. Аналитика делит выручку: КЛ = `cl_amount` с той же скидкой, остаток — очки
+- **КЛ**: Enter: дата → номер → Naziv → Cena → Količina → Sačuvaj; BC/диоптрии/срок замены — в свёрнутом блоке (заполняются BC/диоптриями из рецепта КЛ). «+ Drugo pakovanje» — вторая упаковка (OD/OS) со своей ценой. Старые колонки `orders.cl_*` заполняются для совместимости (первая упаковка)
+- **Линзы для очков — пара OD/OS по 1 шт** (`order_lenses.eye`, qty 1): ввод OD копируется в OS, пока OS не изменён вручную («= OD» — снова связать). Enter после цены OD перескакивает связанный OS. Старые строки «× 2» при редактировании превращаются в пару (сумма та же)
+- **Память цены**: по шифру оправы (`lens_catalog.kind='frame'`) и по названию КЛ (`kind='cl'`, + подсказки названий), как у линз. Автоцена теперь следует за вводом (шифр «12» → «1234» подставит цену 1234), ручную цену не перезаписывает
+- Пустые строки оправ/линз/КЛ не сохраняются; ошибки при сохранении позиций теперь показываются (раньше молча)
+- Изменённые файлы подключены с `?v=20261005` (сброс кэша)
+
+Запушено: `crm.html`, `css/crm.css`, `js/orders.js`, `js/prescriptions.js`, `js/patients.js`, `js/analytics.js`, `FIXES.md`.
