@@ -306,7 +306,8 @@
   border: 1px dashed var(--border); border-radius: 10px; background: transparent;
 }
 .row-comment:focus { border-style: solid; }
-.lens-eye-row.linked input { color: var(--text-light); }
+.lens-col-head { font-size: 12px; color: var(--text-light); font-weight: 600; margin-bottom: 2px; }
+#order-modal input.lens-net { background: var(--section-bg); text-align: right; color: var(--text); cursor: default; }
 .cl-item { border: 1px solid var(--border); border-radius: 12px; padding: 8px; margin-bottom: 6px; }
 .cl-item label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 3px; font-weight: 600; }
 .cl-item input, .cl-item select { width: 100%; min-width: 0; }
