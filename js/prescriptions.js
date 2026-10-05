@@ -263,11 +263,16 @@ async function saveAndAddAnotherPrescription() {
   document.getElementById('rx-form-purpose').value = 'za blizinu';
   document.getElementById('rx-form-date').value = rxDate;
   checkedNames.forEach(name => { document.getElementById(`rx-form-checked-${name}`).checked = true; });
-  // Ako je prethodni recept imao adiciju (Add) — dioptrije za blizinu se odmah izračunavaju.
-  if (payload.purpose !== 'kontaktna sočiva') fillNearFromDistance(payload);
+  // Ako je prethodni recept imao adiciju (Add) — dioptrije za blizinu se odmah izračunavaju,
+  // a fokus ide pravo na "Sačuvaj": jedan Enter snima recept i otvara porudžbinu.
+  const nearFilled = payload.purpose !== 'kontaktna sočiva' && fillNearFromDistance(payload);
   toggleRxClFields();
   updateRxChainUI();
-  focusRxSphField();
+  if (nearFilled) focusRxSubmit(); else focusRxSphField();
+}
+
+function focusRxSubmit() {
+  setTimeout(() => document.querySelector('#rx-form button[type="submit"]')?.focus(), 0);
 }
 
 async function savePrescriptionForm(e) {
