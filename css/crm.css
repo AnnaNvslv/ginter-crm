@@ -183,7 +183,7 @@
 /* Krupne, lako klikljive galočke — koristi se za "Pregled izvršio/la" u receptu,
    gde je preciznost miša bila problem sa malim standardnim checkboxovima. */
 .rx-checked-block { margin-bottom: 16px; }
-.rx-checked-row { display: flex; gap: 28px; margin-bottom: 8px; }
+.rx-checked-row { display: flex; flex-wrap: wrap; gap: 4px 28px; margin-bottom: 8px; }
 .rx-checkbox-lg {
   display: flex; align-items: center; gap: 12px;
   font-size: 19px; font-weight: 600; cursor: pointer;
@@ -297,3 +297,23 @@
    pozadina da upadne u oči u listi, bez da bude alarmantno crvena. */
 .data-table tbody tr.row-warn td { background: #FDF1F0; }
 .data-table tbody tr.row-warn:hover td { background: #FBE4E2; }
+
+/* ═══ Forma porudžbine v2 (2026-10): komentari, par stakala OD/OS, pakovanja sočiva ═══ */
+#rx-modal.over-order { z-index: 110; }
+.row-comment,
+#order-modal input.row-comment {
+  width: 100%; margin-top: 4px; padding: 5px 10px; font-size: 14px;
+  border: 1px dashed var(--border); border-radius: 10px; background: transparent;
+}
+.row-comment:focus { border-style: solid; }
+.lens-eye-row.linked input { color: var(--text-light); }
+.cl-item { border: 1px solid var(--border); border-radius: 12px; padding: 8px; margin-bottom: 6px; }
+.cl-item label { display: block; font-size: 14px; color: var(--text-light); margin-bottom: 3px; font-weight: 600; }
+.cl-item input, .cl-item select { width: 100%; min-width: 0; }
+.cl-details-toggle {
+  display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; width: 100%; text-align: left;
+  margin-top: 6px; padding: 4px 2px; font-size: 14px; color: var(--text-light); background: none;
+}
+.cl-details-summary { color: var(--text); font-size: 14px; }
+.cl-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 10px; margin-top: 4px; }
+.cl-details[hidden] { display: none; }
