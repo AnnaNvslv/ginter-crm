@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/crm.css?v=20261005b">
+<link rel="stylesheet" href="css/crm.css?v=20261005c">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
@@ -158,21 +158,21 @@
 
       <div class="rx-grid">
         <div class="eye-label">OD (desno oko)</div>
-        <div><label>Sph</label><input type="text" id="rx-form-od_sph" placeholder="npr. +2,5"></div>
-        <div><label>Cyl</label><input type="text" id="rx-form-od_cyl"></div>
-        <div><label>Ax</label><input type="text" id="rx-form-od_ax"></div>
+        <div><label>Sph</label><input type="text" id="rx-form-od_sph" data-rx="sph" placeholder="npr. +2,5"></div>
+        <div><label>Cyl</label><input type="text" id="rx-form-od_cyl" data-rx="cyl"></div>
+        <div><label>Ax</label><input type="text" id="rx-form-od_ax" data-rx="ax"></div>
         <div><label>Prizma</label><input type="text" id="rx-form-od_prism" class="enter-skip"></div>
 
         <div class="eye-label">OS (levo oko)</div>
-        <div><label>Sph</label><input type="text" id="rx-form-os_sph"></div>
-        <div><label>Cyl</label><input type="text" id="rx-form-os_cyl"></div>
-        <div><label>Ax</label><input type="text" id="rx-form-os_ax"></div>
+        <div><label>Sph</label><input type="text" id="rx-form-os_sph" data-rx="sph"></div>
+        <div><label>Cyl</label><input type="text" id="rx-form-os_cyl" data-rx="cyl"></div>
+        <div><label>Ax</label><input type="text" id="rx-form-os_ax" data-rx="ax"></div>
         <div><label>Prizma</label><input type="text" id="rx-form-os_prism" class="enter-skip"></div>
 
         <div class="eye-label">Opšte</div>
         <div><label>PD</label><input type="text" id="rx-form-pd"></div>
-        <div><label>Add</label><input type="text" id="rx-form-add"></div>
-        <div><label>Degr</label><input type="text" id="rx-form-degr"></div>
+        <div><label>Add</label><input type="text" id="rx-form-add" data-rx="add"></div>
+        <div><label>Degr</label><input type="text" id="rx-form-degr" data-rx="degr"></div>
         <div></div>
       </div>
 
@@ -363,9 +363,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/utils.js?v=20261005"></script>
+<script src="js/utils.js?v=20261005b"></script>
 <script src="js/patients.js?v=20261005"></script>
-<script src="js/prescriptions.js?v=20261005b"></script>
+<script src="js/prescriptions.js?v=20261005c"></script>
 <script src="js/orders.js?v=20261005c"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="js/analytics.js?v=20261005"></script>
