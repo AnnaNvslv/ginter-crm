@@ -198,6 +198,7 @@ function openAddPrescriptionModal(opts = {}) {
   setRxOpenedFromOrder(opts.fromOrder);
   document.getElementById('rx-modal-title').textContent = 'Novi recept';
   document.getElementById('rx-form').reset();
+  clearRxBad(document.getElementById('rx-form'));
   document.getElementById('rx-form-id').value = '';
   // Datum recepta: ako se otvara odmah nakon kreiranja novog pacijenta, preuzima se
   // datum posete pacijenta (pendingQuickAddDate); iz porudžbine — datum porudžbine;
@@ -212,6 +213,7 @@ function openAddPrescriptionModal(opts = {}) {
 function openEditPrescriptionModal(id) {
   rxChain = [];
   setRxOpenedFromOrder(false);
+  clearRxBad(document.getElementById('rx-form'));
   const rx = currentPrescriptions.find(r => r.id === id);
   document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
@@ -259,6 +261,7 @@ async function saveAndAddAnotherPrescription() {
   const rxDate = payload.rx_date;
 
   document.getElementById('rx-form').reset();
+  clearRxBad(document.getElementById('rx-form'));
   document.getElementById('rx-form-id').value = '';
   document.getElementById('rx-form-purpose').value = 'za blizinu';
   document.getElementById('rx-form-date').value = rxDate;
