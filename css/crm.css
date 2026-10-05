@@ -318,3 +318,6 @@
 .cl-details-summary { color: var(--text); font-size: 14px; }
 .cl-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 10px; margin-top: 4px; }
 .cl-details[hidden] { display: none; }
+
+/* Dioptrija/osa koja nije logična (korak 0,25, plus-cilindar, osa van 0–180) — vidi utils.js */
+.rx-bad { background: #fee2e2 !important; border-color: #f5a3a3 !important; }
