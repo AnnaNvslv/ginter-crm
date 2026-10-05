@@ -348,7 +348,8 @@ function newFrame(purpose) {
 }
 
 // Red okvira: namena · šifra · cena · klijentov · ×, a ispod polje za komentar.
-// Namena, "klijentov" i komentar imaju enter-skip — Enter ide šifra → cena → sledeće.
+// Namena i komentar imaju enter-skip — Enter ide šifra → cena → "klijentov" (Space je
+// čekira) → sledeće.
 function renderFrameRows() {
   document.getElementById('frames-container').innerHTML = orderFramesDraft.map((f, i) => `
     <div style="margin-bottom:8px;">
@@ -359,7 +360,7 @@ function renderFrameRows() {
         <input type="text" id="frame-code-${i}" placeholder="šifra" maxlength="4" value="${escAttr(f.frame_code)}" oninput="onFrameCodeInput(${i}, this.value)" style="padding:10px;font-size:16px;">
         <input type="text" id="frame-price-${i}" placeholder="cena" value="${escAttr(f.price)}" oninput="orderFramesDraft[${i}].price=this.value;orderFramesDraft[${i}]._autoPrice=false;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
         <label style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap;">
-          <input type="checkbox" class="enter-skip" ${f.is_client ? 'checked' : ''} onchange="orderFramesDraft[${i}].is_client=this.checked;updateOrderFormTotal()"> klijentov
+          <input type="checkbox" id="frame-client-${i}" ${f.is_client ? 'checked' : ''} onchange="orderFramesDraft[${i}].is_client=this.checked;updateOrderFormTotal()"> klijentov
         </label>
         <button type="button" onclick="removeFrameRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
