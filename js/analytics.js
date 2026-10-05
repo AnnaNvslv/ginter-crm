@@ -21,7 +21,7 @@ async function loadAnalyticsSection() {
   wrap.innerHTML = '<div class="empty-state" style="height:auto;padding:60px;">Učitavanje analitike...</div>';
 
   const [ordersRes, framesRes, lensesRes, opRes, rxRes, patientsRes] = await Promise.all([
-    sb.from('orders').select('id, patient_id, order_date, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method').is('deleted_at', null),
+    sb.from('orders').select('id, patient_id, order_date, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method, cl_amount, cl_price, cl_qty').is('deleted_at', null),
     sb.from('order_frames').select('order_id, purpose, price, is_client'),
     sb.from('order_lenses').select('order_id, purpose, lens_name, price_unit, discount, qty'),
     sb.from('order_prescriptions').select('order_id, prescription_id'),
@@ -100,8 +100,16 @@ function computeAnalytics(ctx) {
   const orderCount = orders.length;
   const avgOrder = orderCount ? Math.round(totalRevenue / orderCount) : 0;
 
-  const glassesOrders = orders.filter(o => o.order_type === 'glasses');
-  const clOrders = orders.filter(o => o.order_type === 'contact_lenses');
+  // Kombinovana porudžbina (naočare + sočiva) ulazi u obe grupe; promet se deli:
+  // deo za sočiva = cl_amount sa istim popustom, ostatak ide na naočare.
+  const glassesOrders = orders.filter(o => o.order_type === 'glasses' || o.order_type === 'combined');
+  const clOrders = orders.filter(o => o.order_type === 'contact_lenses' || o.order_type === 'combined');
+  const clPart = o => {
+    if (o.order_type === 'contact_lenses') return Number(o.total_amount) || 0;
+    if (o.order_type === 'combined') return Math.min(Number(o.total_amount) || 0, applyDiscount(Number(o.cl_amount) || 0, o.discount_percent));
+    return 0;
+  };
+  const glassesPart = o => (Number(o.total_amount) || 0) - clPart(o);
   const clientFrameOrders = glassesOrders.filter(o => (framesByOrder[o.id] || []).some(f => f.is_client));
   const clientFramePct = glassesOrders.length ? Math.round(clientFrameOrders.length / glassesOrders.length * 100) : 0;
 
@@ -136,7 +144,7 @@ function computeAnalytics(ctx) {
   const addPurpose = (p, amount) => { if (p) purposeRevenue[p] = (purposeRevenue[p] || 0) + amount; };
   frames.forEach(f => { if (!f.is_client) addPurpose(f.purpose, Number(f.price) || 0); });
   lenses.forEach(l => addPurpose(l.purpose, lensTotal(l.price_unit, l.discount, l.qty)));
-  clOrders.forEach(o => addPurpose('kontaktna sočiva', Number(o.total_amount) || 0));
+  clOrders.forEach(o => addPurpose('kontaktna sočiva', clPart(o)));
   const purposeEntries = Object.entries(purposeRevenue).sort((a, b) => b[1] - a[1]);
 
   // ── Okviri / stakla / izrada ──
@@ -157,8 +165,8 @@ function computeAnalytics(ctx) {
   const topLenses = Object.values(lensByName).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
   // ── Naočare / kontaktna sočiva ──
-  const glassesRevenue = glassesOrders.reduce((s, o) => s + (Number(o.total_amount) || 0), 0);
-  const clRevenue = clOrders.reduce((s, o) => s + (Number(o.total_amount) || 0), 0);
+  const glassesRevenue = glassesOrders.reduce((s, o) => s + glassesPart(o), 0);
+  const clRevenue = clOrders.reduce((s, o) => s + clPart(o), 0);
 
   // ── Način plaćanja ──
   const paymentRevenue = {};
@@ -368,7 +376,7 @@ function renderMonthDetail() {
           <tr class="${o.suspectDup ? 'row-warn' : ''}" onclick="goToPatient('${o.patientId}','orders')" title="${o.suspectDup ? 'Isti pacijent, datum i iznos kao druga porudžbina — proveriti da nije duplo uneto' : ''}">
             <td>${fmtDate(o.date)}</td>
             <td class="link">${o.patientName}</td>
-            <td>${o.type === 'glasses' ? 'Naočare' : 'Sočiva'}</td>
+            <td>${o.type === 'glasses' ? 'Naočare' : o.type === 'combined' ? 'Naočare + sočiva' : 'Sočiva'}</td>
             <td>${o.envelope || '—'}</td>
             <td>${o.payment || '—'}</td>
             <td class="num">${fmtMoney(o.amount)}${o.suspectDup ? ' ⚠️' : ''}</td>
