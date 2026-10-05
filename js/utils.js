@@ -280,11 +280,14 @@ function initEnterNavigation() {
       const tag = e.target.tagName;
       if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
       e.preventDefault();
-      const fields = Array.from(form.querySelectorAll('input, select, textarea'))
-        .filter(el => el.type !== 'hidden' && !el.disabled && el.offsetParent !== null && !el.classList.contains('enter-skip'));
-      const idx = fields.indexOf(e.target);
-      if (idx === -1) return;
-      const next = fields[idx + 1];
+      // Sledeće polje se traži od trenutnog polja nadalje — tako i Enter iz polja koje je
+      // samo "enter-skip" (npr. komentar okvira/stakla, ako se u njega klikne mišem) ide
+      // dalje na sledeće obično polje, umesto da stoji u mestu.
+      const all = Array.from(form.querySelectorAll('input, select, textarea'))
+        .filter(el => el.type !== 'hidden' && !el.disabled && el.offsetParent !== null);
+      const pos = all.indexOf(e.target);
+      if (pos === -1) return;
+      const next = all.slice(pos + 1).find(el => !el.classList.contains('enter-skip'));
       if (next) {
         next.focus();
         if (typeof next.select === 'function') next.select();
