@@ -1,5 +1,8 @@
 let currentPrescriptions = [];
 let rxChain = []; // { id, purpose } recepata sačuvanih preko "+ Dodaj još recept" u trenutnoj sesiji unosa
+// true kad je unos recepta otvoren iz forme porudžbine ("+ Novi recept") — posle snimanja
+// recepti se vraćaju u tu porudžbinu umesto da se otvara nova.
+let rxOpenedFromOrder = false;
 
 async function renderPrescriptionsTab() {
   const { data, error } = await sb
@@ -17,9 +20,10 @@ async function renderPrescriptionsTab() {
     ${currentPrescriptions.map(rx => `
       <div class="list-card">
         <div class="list-card-header">
-          <div class="title">${rx.purpose || '—'}${rx.is_client_rx ? ' <span class="badge">klijentov recept</span>' : ''}</div>
+          <div class="title">${rx.purpose || '—'}${rxSourceBadges(rx)}</div>
           <div class="actions">
             <span style="color:var(--text-light);font-size:14px;">${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))}</span>
+            <button class="btn-secondary" onclick="applyPrescriptionToOrder('${rx.id}')">Primeni recept</button>
             <button class="btn-secondary" onclick="openEditPrescriptionModal('${rx.id}')">Izm.</button>
             <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Obr.</button>
           </div>
@@ -62,6 +66,73 @@ async function renderPrescriptionsTab() {
   document.getElementById('tab-content').innerHTML = html;
 }
 
+function rxSourceBadges(rx) {
+  return [
+    rx.is_client_rx && 'klijentov recept',
+    rx.rx_from_client_words && 'po rečima klijenta',
+    rx.rx_from_glasses && 'po naočarima',
+  ].filter(Boolean).map(t => ` <span class="badge">${t}</span>`).join('');
+}
+
+// "Primeni recept": nova porudžbina sa već povezanim ovim receptom.
+async function applyPrescriptionToOrder(id) {
+  await openOrderWithPrescriptions([id]);
+}
+
+// ═══ Recept za blizinu iz recepta sa adicijom ═══
+// Sph za blizinu = Sph za daljinu + Add (oba oka); Cyl, Ax i prizma ostaju isti;
+// PD za blizinu = PD za daljinu − 2 mm (binokularni), odnosno − 1 mm po oku (npr. 32/32 → 31/31).
+// Polja su slobodan tekst: prihvata se zarez ili tačka, "pl"/"plano" = 0.
+function parseDiopter(v) {
+  const s = String(v ?? '').trim().toLowerCase().replace(/\s/g, '').replace(',', '.');
+  if (!s) return null;
+  if (s === 'pl' || s === 'plano' || s === 'pl.') return 0;
+  if (!/^[+-]?\d+(\.\d+)?$/.test(s)) return NaN;
+  return Number(s);
+}
+
+function fmtDiopter(n, useComma) {
+  const r = Math.round(n * 100) / 100;
+  let s = Math.abs(r).toFixed(2);
+  if (useComma) s = s.replace('.', ',');
+  return (r > 0 ? '+' : r < 0 ? '-' : '') + s;
+}
+
+function nearSph(sph, add) {
+  const a = parseDiopter(add);
+  const v = parseDiopter(sph);
+  if (a === null || Number.isNaN(a) || Number.isNaN(v)) return null;
+  const useComma = String(sph ?? '').includes(',') || String(add ?? '').includes(',');
+  return fmtDiopter((v ?? 0) + a, useComma);
+}
+
+function nearPd(pd) {
+  const s = String(pd ?? '').trim();
+  if (!s) return '';
+  const num = v => Number(v.replace(',', '.'));
+  const out = n => { const r = String(Math.round(n * 10) / 10); return s.includes(',') ? r.replace('.', ',') : r; };
+  const mono = s.match(/^(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)$/);
+  if (mono) return `${out(num(mono[1]) - 1)}/${out(num(mono[2]) - 1)}`;
+  if (/^\d+(?:[.,]\d+)?$/.test(s)) return out(num(s) - 2);
+  return s;
+}
+
+// Popunjava formu (već postavljenu na "za blizinu") vrednostima izračunatim iz prethodnog
+// recepta. Vraća false ako prethodni recept nema upotrebljivu adiciju.
+function fillNearFromDistance(prev) {
+  const a = parseDiopter(prev.add);
+  if (a === null || Number.isNaN(a) || a === 0) return false;
+  const odSph = nearSph(prev.od_sph, prev.add);
+  const osSph = nearSph(prev.os_sph, prev.add);
+  const set = (f, v) => { document.getElementById(`rx-form-${f}`).value = v ?? ''; };
+  set('od_sph', odSph ?? prev.od_sph);
+  set('os_sph', osSph ?? prev.os_sph);
+  ['od_cyl', 'od_ax', 'od_prism', 'os_cyl', 'os_ax', 'os_prism'].forEach(f => set(f, prev[f]));
+  set('pd', nearPd(prev.pd));
+  if (odSph === null || osSph === null) toast('Sph nije prepoznat — proverite dioptrije za blizinu', true);
+  return true;
+}
+
 function toggleRxClFields() {
   const isCl = document.getElementById('rx-form-purpose').value === 'kontaktna sočiva';
   document.getElementById('rx-cl-fields').style.display = isCl ? 'grid' : 'none';
@@ -102,6 +173,8 @@ function buildRxFormPayload() {
     purpose,
     rx_date: document.getElementById('rx-form-date').value || todayISO(),
     is_client_rx: document.getElementById('rx-form-client').checked,
+    rx_from_client_words: document.getElementById('rx-form-src-words').checked,
+    rx_from_glasses: document.getElementById('rx-form-src-glasses').checked,
     bc: isCl ? (document.getElementById('rx-form-bc').value.trim() || null) : null,
     dia: isCl ? (document.getElementById('rx-form-dia').value.trim() || null) : null,
     checked_by: checkedBy,
@@ -114,15 +187,22 @@ function buildRxFormPayload() {
   return payload;
 }
 
-function openAddPrescriptionModal() {
+function setRxOpenedFromOrder(on) {
+  rxOpenedFromOrder = !!on;
+  document.getElementById('rx-modal').classList.toggle('over-order', rxOpenedFromOrder);
+}
+
+// opts.fromOrder: otvoreno iz forme porudžbine (modal ide preko nje); opts.date: datum porudžbine.
+function openAddPrescriptionModal(opts = {}) {
   rxChain = [];
+  setRxOpenedFromOrder(opts.fromOrder);
   document.getElementById('rx-modal-title').textContent = 'Novi recept';
   document.getElementById('rx-form').reset();
   document.getElementById('rx-form-id').value = '';
   // Datum recepta: ako se otvara odmah nakon kreiranja novog pacijenta, preuzima se
-  // datum posete pacijenta (pendingQuickAddDate); inače današnji datum. Uvek se može
-  // ručno promeniti — bitno kad se naknadno dodaje recept za stariju posetu.
-  document.getElementById('rx-form-date').value = pendingQuickAddDate || todayISO();
+  // datum posete pacijenta (pendingQuickAddDate); iz porudžbine — datum porudžbine;
+  // inače današnji datum. Uvek se može ručno promeniti.
+  document.getElementById('rx-form-date').value = opts.date || pendingQuickAddDate || todayISO();
   toggleRxClFields();
   updateRxChainUI();
   openModal('rx-modal');
@@ -131,12 +211,15 @@ function openAddPrescriptionModal() {
 
 function openEditPrescriptionModal(id) {
   rxChain = [];
+  setRxOpenedFromOrder(false);
   const rx = currentPrescriptions.find(r => r.id === id);
   document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
   document.getElementById('rx-form-purpose').value = rx.purpose || 'za daljinu';
   document.getElementById('rx-form-date').value = rx.rx_date || (rx.created_at ? rx.created_at.slice(0, 10) : todayISO());
   document.getElementById('rx-form-client').checked = rx.is_client_rx;
+  document.getElementById('rx-form-src-words').checked = !!rx.rx_from_client_words;
+  document.getElementById('rx-form-src-glasses').checked = !!rx.rx_from_glasses;
   ['od_sph','od_cyl','od_ax','od_prism','os_sph','os_cyl','os_ax','os_prism','add','degr','pd'].forEach(f => {
     document.getElementById(`rx-form-${f}`).value = rx[f] ?? '';
   });
@@ -180,6 +263,8 @@ async function saveAndAddAnotherPrescription() {
   document.getElementById('rx-form-purpose').value = 'za blizinu';
   document.getElementById('rx-form-date').value = rxDate;
   checkedNames.forEach(name => { document.getElementById(`rx-form-checked-${name}`).checked = true; });
+  // Ako je prethodni recept imao adiciju (Add) — dioptrije za blizinu se odmah izračunavaju.
+  if (payload.purpose !== 'kontaktna sočiva') fillNearFromDistance(payload);
   toggleRxClFields();
   updateRxChainUI();
   focusRxSphField();
@@ -204,33 +289,27 @@ async function savePrescriptionForm(e) {
   if (error) { toast('Greška pri čuvanju recepta', true); return; }
   closeModal('rx-modal');
   toast('Recept sačuvan');
-  await renderPrescriptionsTab();
 
   // Sakupljamo sve recepte iz ovog lanca (dodate preko "+ Dodaj još recept"), zajedno
   // sa upravo sačuvanim (poslednjim) — svi se odjednom povezuju na istu porudžbinu.
   const chainIds = rxChain.map(r => r.id);
-  const chainPurposes = rxChain.map(r => r.purpose);
   rxChain = [];
-  if (savedId) { chainIds.push(savedId); chainPurposes.push(purpose); }
+  if (savedId) chainIds.push(savedId);
 
-  // Nakon snimanja odmah se otvara forma porudžbine (bez pitanja) — svi recepti iz
-  // lanca se automatski povezuju, okvir/stakla za svaku namenu se odmah dodaju.
-  if (chainIds.length) {
-    await switchTab('orders');
-    // pendingQuickAddDate (ako postoji) prenosi datum pacijenta u formu porudžbine;
-    // openAddOrderModal ga sam resetuje nakon upotrebe.
-    await openAddOrderModal(pendingQuickAddDate);
-    // Ako je bar jedan recept iz lanca za kontaktna sočiva, porudžbina se odmah
-    // otvara na tabu "Kontaktna sočiva" umesto podrazumevanog taba "Naočare"
-    // (openAddOrderModal uvek startuje na 'glasses').
-    if (chainPurposes.includes('kontaktna sočiva')) setOrderType('contact_lenses');
-    orderPrescriptionsDraft = chainIds;
-    chainPurposes.forEach(p => ensureFrameAndLensForPurpose(p));
-    renderPrescriptionRows();
-    renderFrameRows();
-    renderLensRows();
-    updateOrderFormTotal();
+  // Otvoreno iz forme porudžbine → recepti se povezuju na tu (još otvorenu) porudžbinu.
+  if (rxOpenedFromOrder) {
+    setRxOpenedFromOrder(false);
+    updateTabCount('prescriptions', await countPatientPrescriptions(activePatientId));
+    await attachNewPrescriptionsToOrder(chainIds);
+    return;
   }
+
+  await renderPrescriptionsTab();
+
+  // Nakon snimanja novog recepta odmah se otvara forma porudžbine (bez pitanja) — svi
+  // recepti iz lanca se automatski povezuju, okvir/stakla (ili sočiva) se odmah dodaju.
+  // pendingQuickAddDate (ako postoji) prenosi datum pacijenta u formu porudžbine.
+  if (chainIds.length) await openOrderWithPrescriptions(chainIds, pendingQuickAddDate);
 }
 
 async function deletePrescription(id) {
