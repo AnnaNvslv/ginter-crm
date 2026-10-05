@@ -299,6 +299,53 @@ function initEnterNavigation() {
 }
 document.addEventListener('DOMContentLoaded', initEnterNavigation);
 
+// ═══ NORMALIZACIJA DIOPTRIJA PRI IZLASKU IZ POLJA (isto kao u CRM optometrist) ═══
+// "+0,5" → "+0,50", "1.5" → "+1,50", "−0,5" → "-0,50", "0" → "0,00".
+// Vrednost se zaokružuje na korak 0,25; ako uneta vrednost nije bila na koraku 0,25
+// (greška u cifri, npr. "-1,3" → "-1,25"), polje se zacrveni da se proveri.
+// Cyl mora biti minus (plus-cilindar → crveno). Ax: samo 0–180, inače crveno.
+// Add/Degr: uvek bez znaka plus. Polja se označavaju atributom data-rx="sph|cyl|ax|add|degr".
+// Slobodan tekst koji ne liči na broj (npr. "pl") se ne dira.
+function rxNum(s) {
+  if (s == null) return NaN;
+  const t = String(s).replace(/[−–]/g, '-').replace(',', '.').replace(/[^0-9.+\-]/g, '');
+  return t === '' || t === '-' || t === '+' ? NaN : parseFloat(t);
+}
+
+function rxFmt(n) {
+  if (isNaN(n)) return '';
+  const r = Math.round(n * 4) / 4;
+  if (r === 0) return '0,00';
+  return (r > 0 ? '+' : '-') + Math.abs(r).toFixed(2).replace('.', ',');
+}
+
+document.addEventListener('focusout', ev => {
+  const el = ev.target;
+  if (!el || !el.dataset || !el.dataset.rx) return;
+  const raw = el.value.trim();
+  if (!raw) { el.classList.remove('rx-bad'); return; }
+  const type = el.dataset.rx;
+  if (type === 'sph' || type === 'cyl' || type === 'add' || type === 'degr') {
+    if (/^[+\-−–]?\d{1,2}([.,]\d{1,2})?$/.test(raw)) {
+      const n = rxNum(raw);
+      el.value = (type === 'add' || type === 'degr') && n > 0
+        ? Math.abs(Math.round(n * 4) / 4).toFixed(2).replace('.', ',')
+        : rxFmt(n);
+      if (type === 'cyl' && n > 0) el.classList.add('rx-bad'); else el.classList.remove('rx-bad');
+      if (Math.abs(Math.round(n * 4) / 4 - n) > 0.001) el.classList.add('rx-bad');
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  } else if (type === 'ax') {
+    const n = parseInt(raw, 10);
+    el.classList.toggle('rx-bad', !/^\d{1,3}$/.test(raw) || n < 0 || n > 180);
+  }
+}, true);
+
+// Skida crvene oznake sa svih dioptrijskih polja forme (pri otvaranju/resetovanju forme).
+function clearRxBad(root) {
+  (root || document).querySelectorAll('.rx-bad').forEach(el => el.classList.remove('rx-bad'));
+}
+
 // Jedinstven spisak namena — koristi se i za recepte i za okvire/stakla,
 // da bi grupisanje u kartici porudžbine uvek poklopilo recept sa okvirom/staklima.
 const PURPOSES = ['za daljinu', 'za blizinu', 'za računar', 'progresivno', 'bifokalno', 'za stalno nošenje'];
