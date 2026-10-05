@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/crm.css">
+<link rel="stylesheet" href="css/crm.css?v=20261005">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
@@ -196,6 +196,10 @@
           <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-checked-Anna" class="enter-skip"> Anna</label>
           <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-checked-Bojana" class="enter-skip"> Bojana</label>
         </div>
+        <div class="rx-checked-row">
+          <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-src-words" class="enter-skip"> Po rečima klijenta</label>
+          <label class="rx-checkbox-lg"><input type="checkbox" id="rx-form-src-glasses" class="enter-skip"> Po naočarima</label>
+        </div>
       </div>
 
       <label>Komentar</label>
@@ -218,7 +222,8 @@
       <h3 id="order-modal-title">Nova porudžbina</h3>
       <div class="type-toggle">
         <button type="button" data-type="glasses" class="active" onclick="setOrderType('glasses')">👓 Naočare</button>
-        <button type="button" data-type="contact_lenses" onclick="setOrderType('contact_lenses')">👁 Kontaktna sočiva</button>
+        <button type="button" data-type="contact_lenses" onclick="setOrderType('contact_lenses')">👁 Sočiva</button>
+        <button type="button" data-type="combined" onclick="setOrderType('combined')">👓 + 👁 Oba</button>
       </div>
     </div>
     <form id="order-form" onsubmit="saveOrderForm(event)">
@@ -237,7 +242,10 @@
 
       <div class="section-heading with-action">
         <span>Povezati recept(e)</span>
-        <button type="button" class="btn-secondary" onclick="addPrescriptionRow()">+ Dodaj recept</button>
+        <span style="display:flex;gap:8px;">
+          <button type="button" class="btn-secondary" onclick="addPrescriptionRow()">+ Postojeći recept</button>
+          <button type="button" class="btn-secondary" onclick="openNewPrescriptionFromOrder()">+ Novi recept</button>
+        </span>
       </div>
       <div id="order-form-prescriptions-list" style="margin-bottom:10px;"></div>
 
@@ -259,33 +267,12 @@
       </div>
 
       <div id="cl-fields" style="display:none;">
-        <div class="section-heading">Kontaktna sočiva</div>
-        <div class="field-grid">
-          <div>
-            <label>Naziv</label>
-            <input type="text" id="order-form-cl-name">
-          </div>
-          <div>
-            <label>BC</label>
-            <input type="text" id="order-form-cl-bc">
-          </div>
-          <div>
-            <label>Dioptrija</label>
-            <input type="text" id="order-form-cl-diopters">
-          </div>
-          <div>
-            <label>Rok zamene</label>
-            <input type="text" id="order-form-cl-period" placeholder="npr. 1 mesec">
-          </div>
-          <div>
-            <label>Cena po komadu</label>
-            <input type="number" id="order-form-cl-price" min="0" oninput="updateOrderFormTotal()">
-          </div>
-          <div>
-            <label>Količina</label>
-            <input type="number" id="order-form-cl-qty" min="1" value="1" oninput="updateOrderFormTotal()">
-          </div>
+        <div class="section-heading with-action">
+          <span>Kontaktna sočiva</span>
+          <button type="button" class="btn-secondary" onclick="addClItem()">+ Drugo pakovanje</button>
         </div>
+        <datalist id="cl-name-list"></datalist>
+        <div id="cl-items-container" style="margin-bottom:10px;"></div>
       </div>
 
       <div class="sum-row">
@@ -377,11 +364,11 @@
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/patients.js"></script>
-<script src="js/prescriptions.js"></script>
-<script src="js/orders.js"></script>
+<script src="js/patients.js?v=20261005"></script>
+<script src="js/prescriptions.js?v=20261005"></script>
+<script src="js/orders.js?v=20261005"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="js/analytics.js"></script>
+<script src="js/analytics.js?v=20261005"></script>
 <script src="js/nav.js"></script>
 <script>
   requireAuth();
