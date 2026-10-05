@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', initEnterNavigation);
 // "+0,5" → "+0,50", "1.5" → "+1,50", "−0,5" → "-0,50", "0" → "0,00".
 // Vrednost se zaokružuje na korak 0,25; ako uneta vrednost nije bila na koraku 0,25
 // (greška u cifri, npr. "-1,3" → "-1,25"), polje se zacrveni da se proveri.
-// Cyl mora biti minus (plus-cilindar → crveno). Ax: samo 0–180, inače crveno.
+// Cyl može biti i plus i minus (bez crvenog). Ax: samo 0–180, inače crveno.
 // Add/Degr: uvek bez znaka plus. Polja se označavaju atributom data-rx="sph|cyl|ax|add|degr".
 // Slobodan tekst koji ne liči na broj (npr. "pl") se ne dira.
 function rxNum(s) {
@@ -331,7 +331,7 @@ document.addEventListener('focusout', ev => {
       el.value = (type === 'add' || type === 'degr') && n > 0
         ? Math.abs(Math.round(n * 4) / 4).toFixed(2).replace('.', ',')
         : rxFmt(n);
-      if (type === 'cyl' && n > 0) el.classList.add('rx-bad'); else el.classList.remove('rx-bad');
+      el.classList.remove('rx-bad');
       if (Math.abs(Math.round(n * 4) / 4 - n) > 0.001) el.classList.add('rx-bad');
       el.dispatchEvent(new Event('input', { bubbles: true }));
     }
