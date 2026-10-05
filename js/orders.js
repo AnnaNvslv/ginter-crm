@@ -390,7 +390,8 @@ function removeFrameRow(i) {
 // ═══ STAKLA — par OD/OS, po 1 kom ═══
 //
 // Svaki par stakala su dva reda u orderLensesDraft (eye 'OD' i 'OS', qty 1, isti _pair).
-// Sve što se upiše za OD odmah se prepisuje i u OS, dok god OS nije ručno menjan (_linked).
+// Sve što se upiše za OD odmah se prepisuje i u OS (isti izgled kao OD — to je stvarno
+// drugo staklo koje se izrađuje), dok god OS nije ručno menjan (_linked).
 // Ručna izmena bilo kog polja OS prekida vezu; dugme "= OD" je ponovo uspostavlja.
 // Stari redovi (pre 2026-10, bez eye) se prikazuju kao jedan red sa količinom.
 const LENS_COPY_FIELDS = ['lens_name', 'lens_index', 'lens_coating', 'price_unit', 'discount'];
@@ -428,11 +429,34 @@ function lensInput(i, field, placeholder, extraClass = '') {
     style="padding:8px 10px;font-size:16px;width:100%;min-width:0;${num ? 'text-align:right;' : ''}">`;
 }
 
+// Cena po komadu posle popusta stakla (samo za prikaz, računa se iz cena/kom i pop. %).
+function lensNetPrice(l) {
+  if (isBlank(l.price_unit)) return '';
+  return lensTotal(l.price_unit, l.discount, 1);
+}
+
+function lensNetInput(i) {
+  return `<input type="text" id="lens-net-${i}" class="enter-skip lens-net" readonly tabindex="-1" placeholder="—" value="${escAttr(lensNetPrice(orderLensesDraft[i]))}" title="Cena po komadu sa popustom">`;
+}
+
+function refreshLensNet(i) {
+  const el = document.getElementById(`lens-net-${i}`);
+  if (el && orderLensesDraft[i]) el.value = lensNetPrice(orderLensesDraft[i]);
+}
+
+const LENS_PAIR_COLS = '40px 2fr 1fr 1fr 1fr 0.8fr 1fr';
+
+function lensPairHeader() {
+  return `
+    <div class="lens-col-head" style="display:grid;grid-template-columns:${LENS_PAIR_COLS};gap:6px;">
+      <span></span><span>naziv stakla</span><span>indeks</span><span>premaz</span><span>cena/kom</span><span>pop. %</span><span>sa popustom</span>
+    </div>`;
+}
+
 function lensEyeRow(i) {
   const l = orderLensesDraft[i];
-  const linkedOs = l.eye === 'OS' && l._linked;
   return `
-    <div class="lens-eye-row${linkedOs ? ' linked' : ''}" style="display:grid;grid-template-columns:40px 2fr 1fr 1fr 1fr 0.8fr;gap:6px;align-items:center;margin-bottom:6px;">
+    <div class="lens-eye-row" style="display:grid;grid-template-columns:${LENS_PAIR_COLS};gap:6px;align-items:center;margin-bottom:6px;">
       <div style="font-weight:700;color:var(--accent);font-size:15px;">
         ${l.eye}${l.eye === 'OS' && !l._linked ? `<button type="button" title="Ponovo isto kao OD" onclick="relinkOs(${i})" style="display:block;font-size:12px;color:var(--text-light);padding:0;">= OD</button>` : ''}
       </div>
@@ -441,6 +465,7 @@ function lensEyeRow(i) {
       ${lensInput(i, 'lens_coating', 'premaz')}
       ${lensInput(i, 'price_unit', 'cena/kom')}
       ${lensInput(i, 'discount', 'pop. %', 'enter-skip')}
+      ${lensNetInput(i)}
     </div>`;
 }
 
@@ -457,17 +482,18 @@ function renderLensRows() {
       </div>`;
     let body;
     if (odIdx !== undefined) {
-      body = g.rows.map(lensEyeRow).join('');
+      body = lensPairHeader() + g.rows.map(lensEyeRow).join('');
     } else {
       // stari red (bez OD/OS) — sa poljem za količinu
       const i = g.rows[0];
       body = `
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 0.8fr 0.6fr;gap:6px;margin-bottom:6px;">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 0.8fr 1fr 0.6fr;gap:6px;margin-bottom:6px;">
           ${lensInput(i, 'lens_name', 'naziv stakla')}
           ${lensInput(i, 'lens_index', 'indeks')}
           ${lensInput(i, 'lens_coating', 'premaz')}
           ${lensInput(i, 'price_unit', 'cena/kom')}
           ${lensInput(i, 'discount', 'pop. %', 'enter-skip')}
+          ${lensNetInput(i)}
           ${lensInput(i, 'qty', 'kol.')}
         </div>`;
     }
@@ -486,12 +512,15 @@ function onLensFieldInput(i, field, value) {
   l[field] = value;
   if (field === 'price_unit') l._autoPrice = false;
   if (field === 'lens_name') applyRememberedPrice(l, 'price_unit', knownLensPrices[value.trim().toLowerCase()], `lens-price_unit-${i}`);
+  // Ručna izmena OS → OS više ne prati OD (pojavljuje se "= OD" za ponovno povezivanje).
   if (l.eye === 'OS' && l._linked) {
     l._linked = false;
-    const row = document.getElementById(`lens-${field}-${i}`)?.closest('.lens-eye-row');
-    if (row) row.classList.remove('linked');
+    renderLensRows();
+    const el = document.getElementById(`lens-${field}-${i}`);
+    if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (_) {} }
   }
   if (l.eye === 'OD') syncLinkedOs(i);
+  refreshLensNet(i);
   updateOrderFormTotal();
 }
 
@@ -512,6 +541,7 @@ function syncLinkedOs(odIdx) {
     if (el) el.value = od[f] ?? '';
   });
   os._autoPrice = od._autoPrice;
+  refreshLensNet(osIdx);
 }
 
 function relinkOs(osIdx) {
