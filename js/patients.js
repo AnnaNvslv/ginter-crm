@@ -72,7 +72,7 @@ function renderPatientList(filter = '') {
           <div class="name">${fullName(p)}${p.tkt ? ' <span class="badge">TKT</span>' : ''}${debtors.has(p.id) ? ' <span class="debt-badge">dug</span>' : ''}</div>
           <div class="meta">${p.phone || 'bez telefona'}</div>
         </div>
-        <div class="visit">poslednja poseta<br>${fmtDate(p.visit_date)}</div>
+        <div class="visit">poslednja poseta<br>${fmtDateP(p.visit_date, p.visit_date_prec)}</div>
       </div>
     `).join('')}
   `).join('') || '<div class="empty-state" style="height:auto;padding:40px 20px;">Pacijenti nisu pronađeni</div>';
@@ -170,7 +170,7 @@ function renderInfoTab() {
   document.getElementById('tab-content').innerHTML = `
     <div class="list-card">
       <div class="kv-row">
-        <span><b>Datum posete:</b> ${fmtDate(patient.visit_date)}</span>
+        <span><b>Datum posete:</b> ${fmtDateP(patient.visit_date, patient.visit_date_prec)}</span>
         <span><b>Telefon:</b> ${patient.phone || '—'}</span>
         <span><b>TKT:</b> ${patient.tkt ? 'da' : 'ne'}</span>
       </div>
@@ -183,7 +183,7 @@ function openAddPatientModal() {
   document.getElementById('patient-modal-title').textContent = 'Novi pacijent';
   document.getElementById('patient-form').reset();
   document.getElementById('patient-form-id').value = '';
-  document.getElementById('patient-form-visit-date').value = todayISO();
+  setDateVal('patient-form-visit-date', todayISO());
   hideDupWarning();
   openModal('patient-modal');
 }
@@ -196,7 +196,7 @@ function openEditPatientModal() {
   document.getElementById('patient-form-last-name').value = patient.last_name || '';
   document.getElementById('patient-form-tkt').checked = patient.tkt;
   document.getElementById('patient-form-phone').value = patient.phone || '';
-  document.getElementById('patient-form-visit-date').value = patient.visit_date || todayISO();
+  setDateVal('patient-form-visit-date', { date: patient.visit_date, prec: patient.visit_date_prec || 'day' });
   document.getElementById('patient-form-notes').value = patient.notes || '';
   hideDupWarning();
   openModal('patient-modal');
@@ -263,12 +263,15 @@ function useDuplicatePatient(id) {
 async function savePatientForm(e) {
   e.preventDefault();
   const id = document.getElementById('patient-form-id').value;
+  const visit = getDateVal('patient-form-visit-date');
+  if (!visit.ok) { toast('Unesite godinu (npr. 2021)', true); return; }
   const payload = {
     first_name: document.getElementById('patient-form-first-name').value.trim(),
     last_name: document.getElementById('patient-form-last-name').value.trim(),
     tkt: document.getElementById('patient-form-tkt').checked,
     phone: document.getElementById('patient-form-phone').value.trim() || null,
-    visit_date: document.getElementById('patient-form-visit-date').value || todayISO(),
+    visit_date: visit.date,
+    visit_date_prec: visit.prec,
     notes: document.getElementById('patient-form-notes').value.trim() || null,
   };
 
@@ -290,7 +293,7 @@ async function savePatientForm(e) {
   await loadPatients();
 
   if (savedId) {
-    if (!id) pendingQuickAddDate = payload.visit_date;
+    if (!id) pendingQuickAddDate = { date: payload.visit_date, prec: payload.visit_date_prec };
     await openPatient(savedId);
     if (!id) {
       await switchTab('prescriptions');
