@@ -285,3 +285,5 @@ SQL: `prescriptions.rx_date` — снят NOT NULL; новые колонки `p
 - `?v=20261006` на изменённых файлах
 
 Запушено: `crm.html`, `css/crm.css`, `js/utils.js`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `js/analytics.js`, `FIXES.md`.
+
+- Раздел **Porudžbine** (верхняя вкладка): при открытии курсор сразу в поле «Broj porudžbine» (`switchSection()` в `js/nav.js`); `nav.js` подключён с `?v=20261006`
