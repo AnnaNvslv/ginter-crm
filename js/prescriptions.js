@@ -4,12 +4,18 @@ let rxChain = []; // { id, purpose } recepata sačuvanih preko "+ Dodaj još rec
 // recepti se vraćaju u tu porudžbinu umesto da se otvara nova.
 let rxOpenedFromOrder = false;
 
+// Datum recepta za prikaz: tačan datum, "2021. g." ili "datum nepoznat".
+function rxDateLabel(rx) {
+  if (rx.rx_date_prec && rx.rx_date_prec !== 'day') return fmtDateP(rx.rx_date, rx.rx_date_prec);
+  return fmtDate(rx.rx_date || rx.created_at?.slice(0, 10));
+}
+
 async function renderPrescriptionsTab() {
   const { data, error } = await sb
     .from('prescriptions')
     .select('*')
     .eq('patient_id', activePatientId)
-    .order('rx_date', { ascending: false });
+    .order('rx_date', { ascending: false, nullsFirst: false });
 
   if (error) { toast('Greška pri učitavanju recepata', true); return; }
   currentPrescriptions = data;
@@ -22,7 +28,7 @@ async function renderPrescriptionsTab() {
         <div class="list-card-header">
           <div class="title">${rx.purpose || '—'}${rxSourceBadges(rx)}</div>
           <div class="actions">
-            <span style="color:var(--text-light);font-size:14px;">${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))}</span>
+            <span style="color:var(--text-light);font-size:14px;">${rxDateLabel(rx)}</span>
             <button class="btn-secondary" onclick="applyPrescriptionToOrder('${rx.id}')">Primeni recept</button>
             <button class="btn-secondary" onclick="openEditPrescriptionModal('${rx.id}')">Izm.</button>
             <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePrescription('${rx.id}')">Obr.</button>
@@ -161,6 +167,8 @@ function updateRxChainUI() {
 // Čita trenutna polja forme u payload za upis u bazu — koristi ga i "+ Dodaj još recept"
 // i normalno "Sačuvaj", da ne bi bilo duplirane logike.
 function buildRxFormPayload() {
+  const rxDate = getDateVal('rx-form-date');
+  if (!rxDate.ok) { toast('Unesite godinu recepta (npr. 2021)', true); return null; }
   const purpose = document.getElementById('rx-form-purpose').value;
   const isCl = purpose === 'kontaktna sočiva';
 
@@ -171,7 +179,8 @@ function buildRxFormPayload() {
   const payload = {
     patient_id: activePatientId,
     purpose,
-    rx_date: document.getElementById('rx-form-date').value || todayISO(),
+    rx_date: rxDate.date,
+    rx_date_prec: rxDate.prec,
     is_client_rx: document.getElementById('rx-form-client').checked,
     rx_from_client_words: document.getElementById('rx-form-src-words').checked,
     rx_from_glasses: document.getElementById('rx-form-src-glasses').checked,
@@ -203,7 +212,7 @@ function openAddPrescriptionModal(opts = {}) {
   // Datum recepta: ako se otvara odmah nakon kreiranja novog pacijenta, preuzima se
   // datum posete pacijenta (pendingQuickAddDate); iz porudžbine — datum porudžbine;
   // inače današnji datum. Uvek se može ručno promeniti.
-  document.getElementById('rx-form-date').value = opts.date || pendingQuickAddDate || todayISO();
+  setDateVal('rx-form-date', opts.date || pendingQuickAddDate || todayISO());
   toggleRxClFields();
   updateRxChainUI();
   openModal('rx-modal');
@@ -218,7 +227,9 @@ function openEditPrescriptionModal(id) {
   document.getElementById('rx-modal-title').textContent = 'Izmena recepta';
   document.getElementById('rx-form-id').value = rx.id;
   document.getElementById('rx-form-purpose').value = rx.purpose || 'za daljinu';
-  document.getElementById('rx-form-date').value = rx.rx_date || (rx.created_at ? rx.created_at.slice(0, 10) : todayISO());
+  setDateVal('rx-form-date', rx.rx_date_prec && rx.rx_date_prec !== 'day'
+    ? { date: rx.rx_date, prec: rx.rx_date_prec }
+    : (rx.rx_date || (rx.created_at ? rx.created_at.slice(0, 10) : todayISO())));
   document.getElementById('rx-form-client').checked = rx.is_client_rx;
   document.getElementById('rx-form-src-words').checked = !!rx.rx_from_client_words;
   document.getElementById('rx-form-src-glasses').checked = !!rx.rx_from_glasses;
@@ -249,6 +260,7 @@ function openEditPrescriptionModal(id) {
 // Ana unosi dva recepta zaredom je prvi za daljinu, drugi za blizinu.
 async function saveAndAddAnotherPrescription() {
   const payload = buildRxFormPayload();
+  if (!payload) return;
   payload.created_by = getCurrentUser()?.name || null;
   const { data, error } = await sb.from('prescriptions').insert(payload).select('id').single();
   if (error) { toast('Greška pri čuvanju recepta', true); return; }
@@ -258,13 +270,13 @@ async function saveAndAddAnotherPrescription() {
 
   const checkedNames = ['Ervin', 'Anna', 'Bojana']
     .filter(name => document.getElementById(`rx-form-checked-${name}`).checked);
-  const rxDate = payload.rx_date;
+  const rxDate = { date: payload.rx_date, prec: payload.rx_date_prec };
 
   document.getElementById('rx-form').reset();
   clearRxBad(document.getElementById('rx-form'));
   document.getElementById('rx-form-id').value = '';
   document.getElementById('rx-form-purpose').value = 'za blizinu';
-  document.getElementById('rx-form-date').value = rxDate;
+  setDateVal('rx-form-date', rxDate);
   checkedNames.forEach(name => { document.getElementById(`rx-form-checked-${name}`).checked = true; });
   // Ako je prethodni recept imao adiciju (Add) — dioptrije za blizinu se odmah izračunavaju,
   // a fokus ide pravo na "Sačuvaj": jedan Enter snima recept i otvara porudžbinu.
@@ -282,6 +294,7 @@ async function savePrescriptionForm(e) {
   e.preventDefault();
   const id = document.getElementById('rx-form-id').value;
   const payload = buildRxFormPayload();
+  if (!payload) return;
   const purpose = payload.purpose;
 
   let error, savedId = id;
@@ -357,7 +370,7 @@ async function loadExamsSection(reset = false) {
   }
 
   let query = sb.from('prescriptions').select('*')
-    .order('rx_date', { ascending: false })
+    .order('rx_date', { ascending: false, nullsFirst: false })
     .range(examsSectionOffset, examsSectionOffset + EXAMS_PAGE - 1);
   if (patientIds) query = query.in('patient_id', patientIds);
   if (dateFilter) query = query.eq('rx_date', dateFilter);
@@ -387,7 +400,7 @@ function renderExamsSectionTable(hasMore = false) {
       <tbody>
         ${examsSectionRows.map(({ rx, patient: p }) => `
           <tr onclick="goToPatient('${rx.patient_id}','prescriptions')">
-            <td>${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))}</td>
+            <td>${rxDateLabel(rx)}</td>
             <td class="link">${p ? fullName(p) : '—'}</td>
             <td>${rx.purpose || '—'}</td>
             <td class="num">${rx.od_sph || '—'} / ${rx.od_cyl || '—'} / ${rx.od_ax || '—'}</td>

@@ -27,7 +27,7 @@ async function renderOrdersTab() {
     .select('*')
     .eq('patient_id', activePatientId)
     .is('deleted_at', null)
-    .order('order_date', { ascending: false });
+    .order('order_date', { ascending: false, nullsFirst: false });
 
   if (error) { toast('Greška pri učitavanju porudžbina', true); return; }
   currentOrders = orders;
@@ -191,7 +191,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
       <div class="list-card-header">
         <div class="title">${orderTypeLabel(o.order_type)} ${o.envelope_number ? `<span class="badge">br. ${o.envelope_number}</span>` : ''}</div>
         <div class="actions">
-          <span style="color:var(--text-light);font-size:14px;">${fmtDate(o.order_date)}</span>
+          <span style="color:var(--text-light);font-size:14px;">${fmtDateP(o.order_date, o.order_date_prec)}</span>
           <button class="btn-secondary" onclick="openEditOrderModal('${o.id}')">Izm.</button>
           <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deleteOrder('${o.id}')">Obr.</button>
         </div>
@@ -235,7 +235,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
         </div>
       ` : ''}
       ${o.comment ? `<div style="margin-top:10px;color:var(--text-light);">${o.comment}</div>` : ''}
-      ${o.created_by ? `<div class="entry-meta">Uneo/la: ${o.created_by} · ${fmtDate(o.order_date)}</div>` : ''}
+      ${o.created_by ? `<div class="entry-meta">Uneo/la: ${o.created_by} · ${fmtDateP(o.order_date, o.order_date_prec)}</div>` : ''}
     </div>
   `;
 }
@@ -828,7 +828,7 @@ function rxSummaryLine(rx) {
 }
 
 function rxOptionLabel(rx) {
-  return `${rx.purpose || 'recept'} — ${rxSummaryLine(rx)} (${fmtDate(rx.rx_date || rx.created_at?.slice(0,10))})`;
+  return `${rx.purpose || 'recept'} — ${rxSummaryLine(rx)} (${rxDateLabel(rx)})`;
 }
 
 // Padajuće liste povezanih recepata imaju enter-skip — Enter iz "Broj porudžbine" ide
@@ -932,7 +932,8 @@ async function populatePrescriptionOptions() {
 // "+ Novi recept" u formi porudžbine: otvara uobičajen unos recepta preko porudžbine;
 // posle "Sačuvaj" recept(i) se vraćaju ovde — vidi attachNewPrescriptionsToOrder().
 function openNewPrescriptionFromOrder() {
-  openAddPrescriptionModal({ fromOrder: true, date: document.getElementById('order-form-date').value });
+  const d = getDateVal('order-form-date');
+  openAddPrescriptionModal({ fromOrder: true, date: d.ok ? d : null });
 }
 
 async function attachNewPrescriptionsToOrder(ids) {
@@ -974,7 +975,10 @@ function updateOrderFormTotal() {
 // Prvo aktivno polje je "Datum porudžbine"; Enter → Broj porudžbine → Enter → šifra
 // okvira (ili naziv sočiva) — recepti i namene se preskaču (enter-skip).
 function focusOrderDateField() {
-  setTimeout(() => focusEl('order-form-date'), 0);
+  setTimeout(() => {
+    const prec = document.getElementById('order-form-date').dataset.prec;
+    focusEl(prec === 'year' ? 'order-form-date-year' : prec === 'unknown' ? 'order-form-envelope' : 'order-form-date');
+  }, 0);
 }
 
 // dateOverride: kada se porudžbina otvara odmah nakon kreiranja novog pacijenta
@@ -984,7 +988,7 @@ async function openAddOrderModal(dateOverride) {
   document.getElementById('order-modal-title').textContent = 'Nova porudžbina';
   document.getElementById('order-form').reset();
   document.getElementById('order-form-id').value = '';
-  document.getElementById('order-form-date').value = dateOverride || todayISO();
+  setDateVal('order-form-date', dateOverride || todayISO());
   pendingQuickAddDate = null;
   orderFramesDraft = [];
   orderLensesDraft = [];
@@ -1007,7 +1011,7 @@ async function openEditOrderModal(id) {
   const o = currentOrders.find(x => x.id === id);
   document.getElementById('order-modal-title').textContent = 'Izmena porudžbine';
   document.getElementById('order-form-id').value = o.id;
-  document.getElementById('order-form-date').value = o.order_date || todayISO();
+  setDateVal('order-form-date', { date: o.order_date, prec: o.order_date_prec || 'day' });
   document.getElementById('order-form-envelope').value = o.envelope_number || '';
   document.getElementById('order-form-comment').value = o.comment || '';
   document.getElementById('order-form-prepayment').value = o.prepayment || '';
@@ -1120,9 +1124,12 @@ async function saveOrderFormInner(e) {
   const hasGlasses = orderHasGlasses;
   const hasCl = orderHasCl;
 
+  const orderDate = getDateVal('order-form-date');
+  if (!orderDate.ok) { toast('Unesite godinu porudžbine (npr. 2021)', true); return; }
   const payload = {
     patient_id: activePatientId,
-    order_date: document.getElementById('order-form-date').value || todayISO(),
+    order_date: orderDate.date,
+    order_date_prec: orderDate.prec,
     envelope_number: document.getElementById('order-form-envelope').value.trim() || null,
     order_type: currentOrderType(),
     prepayment: Number(document.getElementById('order-form-prepayment').value) || 0,
@@ -1258,7 +1265,7 @@ async function loadOrdersSection(reset = false) {
   }
 
   let query = sb.from('orders').select('*').is('deleted_at', null)
-    .order('order_date', { ascending: false })
+    .order('order_date', { ascending: false, nullsFirst: false })
     .range(ordersSectionOffset, ordersSectionOffset + ORDERS_PAGE - 1);
   if (patientIds) query = query.in('patient_id', patientIds);
   if (dateFilter) query = query.eq('order_date', dateFilter);
@@ -1289,7 +1296,7 @@ function renderOrdersSectionTable(hasMore = false) {
       <tbody>
         ${ordersSectionRows.map(({ order: o, patient: p }) => `
           <tr onclick="goToPatient('${o.patient_id}','orders')">
-            <td>${fmtDate(o.order_date)}</td>
+            <td>${fmtDateP(o.order_date, o.order_date_prec)}</td>
             <td class="link">${p ? fullName(p) : '—'}</td>
             <td>${o.order_type === 'glasses' ? 'Naočare' : o.order_type === 'combined' ? 'Naočare + sočiva' : 'Sočiva'}</td>
             <td>${o.envelope_number || '—'}</td>
@@ -1342,7 +1349,7 @@ async function loadDebtsData() {
 
   debtRecords = withRemaining
     .map(r => ({ ...r, patient: patientsMap[r.order.patient_id] || null }))
-    .sort((a, b) => (a.order.order_date < b.order.order_date ? 1 : -1));
+    .sort((a, b) => ((a.order.order_date || '') < (b.order.order_date || '') ? 1 : -1));
 
   debtorPatientIds = new Set(withRemaining.map(r => r.order.patient_id));
 }
@@ -1382,7 +1389,7 @@ function renderDebtsTable() {
           <tr onclick="goToPatient('${r.order.patient_id}','orders')">
             <td class="link">${r.order.envelope_number || '—'}</td>
             <td>${r.patient ? fullName(r.patient) : '—'}</td>
-            <td>${fmtDate(r.order.order_date)}</td>
+            <td>${fmtDateP(r.order.order_date, r.order.order_date_prec)}</td>
             <td class="num">${fmtMoney(r.total)}</td>
             <td class="num">${fmtMoney(r.paid)}</td>
             <td class="num remaining-danger">${fmtMoney(r.remaining)}</td>
