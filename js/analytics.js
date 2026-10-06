@@ -21,11 +21,11 @@ async function loadAnalyticsSection() {
   wrap.innerHTML = '<div class="empty-state" style="height:auto;padding:60px;">Učitavanje analitike...</div>';
 
   const [ordersRes, framesRes, lensesRes, opRes, rxRes, patientsRes] = await Promise.all([
-    sb.from('orders').select('id, patient_id, order_date, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method, cl_amount, cl_price, cl_qty').is('deleted_at', null),
+    sb.from('orders').select('id, patient_id, order_date, order_date_prec, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method, cl_amount, cl_price, cl_qty').is('deleted_at', null),
     sb.from('order_frames').select('order_id, purpose, price, is_client'),
     sb.from('order_lenses').select('order_id, purpose, lens_name, price_unit, discount, qty'),
     sb.from('order_prescriptions').select('order_id, prescription_id'),
-    sb.from('prescriptions').select('id, patient_id, purpose, rx_date'),
+    sb.from('prescriptions').select('id, patient_id, purpose, rx_date, rx_date_prec'),
     sb.from('patients').select('id, first_name, last_name').is('deleted_at', null),
   ]);
 
@@ -58,7 +58,7 @@ async function loadAnalyticsSection() {
   opLinks.forEach(link => {
     linkedPrescriptionIds.add(link.prescription_id);
     const rx = rxById[link.prescription_id];
-    if (!rx || !rx.rx_date) return;
+    if (!rx || !rx.rx_date || (rx.rx_date_prec && rx.rx_date_prec !== 'day')) return;
     (rxDatesByOrder[link.order_id] ??= []).push(rx.rx_date);
   });
 
@@ -67,14 +67,17 @@ async function loadAnalyticsSection() {
   // se tako ispoljava dvostruki klik na "Sačuvaj" (ista porudžbina upisana dvaput
   // u razmaku od par sekundi); realno dupliranih porudžbina (npr. druge naočare
   // istog dana za istu osobu, ali druge cene) ovo ne pogađa.
+  // Porudžbine bez tačnog datuma (samo godina / nepoznato) ne ulaze u mesečni izveštaj
+  // ni u proveru duplikata.
+  const isExact = o => o.order_date && (!o.order_date_prec || o.order_date_prec === 'day');
   const dupKeyCount = {};
   orders.forEach(o => {
-    if (!o.order_date) return;
+    if (!isExact(o)) return;
     const key = `${o.patient_id}|${o.order_date}|${Number(o.total_amount) || 0}`;
     dupKeyCount[key] = (dupKeyCount[key] || 0) + 1;
   });
   analyticsOrdersFlat = orders
-    .filter(o => o.order_date)
+    .filter(isExact)
     .map(o => {
       const key = `${o.patient_id}|${o.order_date}|${Number(o.total_amount) || 0}`;
       return {
@@ -114,14 +117,25 @@ function computeAnalytics(ctx) {
   const clientFramePct = glassesOrders.length ? Math.round(clientFrameOrders.length / glassesOrders.length * 100) : 0;
 
   // ── Promet po mesecima (poslednjih 12) i po godinama ──
+  // Samo godina → ulazi u godišnji prikaz, ne u mesece (posebna napomena ispod grafika).
+  // Nepoznat datum → ne ulazi u grafike po vremenu, ali ulazi u sve ostale brojke.
   const monthMap = {};
   const yearMap = {};
+  const yearOnly = {};            // { '2021': { count, total } }
+  const noDate = { count: 0, total: 0 };
   orders.forEach(o => {
-    if (!o.order_date) return;
-    const ym = o.order_date.slice(0, 7);
+    const amount = Number(o.total_amount) || 0;
+    const prec = o.order_date_prec || 'day';
+    if (!o.order_date || prec === 'unknown') { noDate.count++; noDate.total += amount; return; }
     const y = o.order_date.slice(0, 4);
-    monthMap[ym] = (monthMap[ym] || 0) + (Number(o.total_amount) || 0);
-    yearMap[y] = (yearMap[y] || 0) + (Number(o.total_amount) || 0);
+    yearMap[y] = (yearMap[y] || 0) + amount;
+    if (prec === 'year') {
+      const e = (yearOnly[y] ??= { count: 0, total: 0 });
+      e.count++; e.total += amount;
+      return;
+    }
+    const ym = o.order_date.slice(0, 7);
+    monthMap[ym] = (monthMap[ym] || 0) + amount;
   });
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
   const now = new Date();
@@ -199,7 +213,7 @@ function computeAnalytics(ctx) {
   let lagSum = 0, lagCount = 0;
   orders.forEach(o => {
     const dates = rxDatesByOrder[o.id];
-    if (!dates || !dates.length || !o.order_date) return;
+    if (!dates || !dates.length || !isExactDate(o)) return;
     const earliest = [...dates].sort()[0];
     const lag = (new Date(o.order_date) - new Date(earliest)) / 86400000;
     if (lag >= 0 && lag < 3650) { lagSum += lag; lagCount++; }
@@ -223,7 +237,7 @@ function computeAnalytics(ctx) {
 
   return {
     totalRevenue, orderCount, avgOrder, clientFramePct, clientFrameOrdersCount: clientFrameOrders.length, glassesOrdersCount: glassesOrders.length,
-    monthLabels, monthValues, yearLabels, yearValues, allMonthKeys,
+    monthLabels, monthValues, yearLabels, yearValues, allMonthKeys, yearOnly, noDate,
     purposeEntries,
     framesTotal, lensesTotalSum, izradaTotal,
     topLenses,
@@ -237,7 +251,7 @@ function computeAnalytics(ctx) {
 }
 
 function renderAnalytics(s) {
-  analyticsTrendData = { monthLabels: s.monthLabels, monthValues: s.monthValues, yearLabels: s.yearLabels, yearValues: s.yearValues };
+  analyticsTrendData = { monthLabels: s.monthLabels, monthValues: s.monthValues, yearLabels: s.yearLabels, yearValues: s.yearValues, yearOnly: s.yearOnly, noDate: s.noDate };
 
   const purposeLabels = s.purposeEntries.map(([p]) => p);
   const purposeValues = s.purposeEntries.map(([, v]) => v);
@@ -266,6 +280,7 @@ function renderAnalytics(s) {
     <div class="chart-wrap" style="height:240px;margin-bottom:8px;">
       <canvas id="analytics-chart-trend" role="img" aria-label="Promet po mesecima ili po godinama"></canvas>
     </div>
+    <div id="analytics-trend-note" class="analytics-trend-note"></div>
 
     <div class="analytics-section-title">Izveštaj po mesecu <span class="sub">— detaljna lista porudžbina, za proveru brojki</span></div>
     <select id="analytics-month-select" class="analytics-month-select" onchange="analyticsSelectedMonth=this.value;renderMonthDetail();">
@@ -328,7 +343,7 @@ function renderAnalytics(s) {
     <table class="data-table">
       <thead><tr><th>Pacijent</th><th>Namena</th><th>Datum recepta</th></tr></thead>
       <tbody>
-        ${s.unlinkedRx.map(rx => `<tr onclick="goToPatient('${rx.patient_id}','prescriptions')"><td class="link">${fullName(s.patientsMap[rx.patient_id])}</td><td>${rx.purpose || '—'}</td><td>${fmtDate(rx.rx_date)}</td></tr>`).join('') || '<tr><td colspan="3">Nema recepata bez porudžbine</td></tr>'}
+        ${s.unlinkedRx.map(rx => `<tr onclick="goToPatient('${rx.patient_id}','prescriptions')"><td class="link">${fullName(s.patientsMap[rx.patient_id])}</td><td>${rx.purpose || '—'}</td><td>${fmtDateP(rx.rx_date, rx.rx_date_prec || 'day')}</td></tr>`).join('') || '<tr><td colspan="3">Nema recepata bez porudžbine</td></tr>'}
       </tbody>
     </table>
 
@@ -394,7 +409,28 @@ function setAnalyticsPeriod(period) {
   renderTrendChart();
 }
 
+function isExactDate(o) {
+  return o.order_date && (!o.order_date_prec || o.order_date_prec === 'day');
+}
+
+function renderTrendNote() {
+  const el = document.getElementById('analytics-trend-note');
+  if (!el || !analyticsTrendData) return;
+  const parts = [];
+  const pl = n => n === 1 ? 'porudžbina' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'porudžbine' : 'porudžbina';
+  if (analyticsPeriod === 'month') {
+    Object.keys(analyticsTrendData.yearOnly || {}).sort().forEach(y => {
+      const e = analyticsTrendData.yearOnly[y];
+      parts.push(`${y}: + ${e.count} ${pl(e.count)} bez meseca, ${fmtMoney(e.total)}`);
+    });
+  }
+  const nd = analyticsTrendData.noDate;
+  if (nd && nd.count) parts.push(`Bez datuma: ${nd.count} ${pl(nd.count)}, ${fmtMoney(nd.total)} (nisu na grafiku, ali su u ostalim brojkama)`);
+  el.innerHTML = parts.map(t => `<div>${t}</div>`).join('');
+}
+
 function renderTrendChart() {
+  renderTrendNote();
   const ctx = document.getElementById('analytics-chart-trend');
   if (!ctx) return;
   if (analyticsTrendChart) analyticsTrendChart.destroy();
