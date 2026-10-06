@@ -274,3 +274,14 @@ SQL (Supabase SQL Editor, проект `flxewreibnkyfoccfjtg`): `prescriptions.r
 - **Нормализация диоптрий в рецепте** (перенесено из CRM optometrist, `exam-clinical.js`): при выходе из поля Sph/Cyl/Add/Degr — `+0,5` → `+0,50`, `1.5` → `+1,50`, `−0,5` → `-0,50`, `0` → `0,00`; округление до шага 0,25 — если введено не по шагу (`-1,3` → `-1,25`), поле подсвечивается красным. Cyl с плюсом допустим (не подсвечивается — в Ginter плюсовые цилиндры частые); Ax вне 0–180 — красным. Add/Degr без знака плюс. Разделитель — запятая (как в остальной Ginter CRM). Текст вроде `pl` не трогается. Поля помечены `data-rx` в `crm.html`, обработчик `focusout` и `clearRxBad()` — в `js/utils.js`, стиль `.rx-bad` — в `css/crm.css`; подсветка сбрасывается при открытии формы
 
 Запушено: `crm.html`, `css/crm.css`, `js/orders.js`, `js/prescriptions.js`, `js/patients.js`, `js/analytics.js`, `js/utils.js`, `FIXES.md`.
+
+## 2026-10-06 — даты «только год» / «неизвестно» (SQL выполнен Анной)
+SQL: `prescriptions.rx_date` — снят NOT NULL; новые колонки `patients.visit_date_prec`, `prescriptions.rx_date_prec`, `orders.order_date_prec` (`'day' | 'year' | 'unknown'`, по умолчанию `'day'` — все старые записи остались с точной датой).
+
+- **Формы пациента, рецепта и заказа**: рядом с полем даты переключатель «Datum / Godina / ?». «Godina» — вводится только год (хранится как `YYYY-01-01` + `prec='year'`), «?» — дата неизвестна (`null` + `prec='unknown'`). Кнопки переключателя Enter пропускает; поле года — в цепочке Enter. Выбор наследуется по цепочке пациент → рецепт → заказ (`pendingQuickAddDate` теперь `{date, prec}`), «+ Dodaj još recept» и «+ Novi recept» из заказа тоже переносят его. Пустой/неверный год — сообщение, без сохранения
+- **Отображение**: «2021. g.» / «datum nepoznat» в карточках, списке пациентов, Porudžbine, Pregledi, Dugovanja, списке рецептов в заказе (`fmtDateP()`, `rxDateLabel()`). Сортировка: без даты — в конце (`nullsFirst: false`)
+- **Аналитика**: «только год» — в годовом графике в своём году; в месячном не попадает в месяцы, под графиком строка «2021: + N porudžbina bez meseca, X RSD». «Без даты» — не на графиках, но во всех остальных цифрах, строка «Bez datuma: N porudžbina, X RSD». Месячный отчёт, проверка дублей и «от осмотра до заказа» — только точные даты
+- Общие функции в `js/utils.js`: `initDatePrec`, `setDatePrec`, `setDateVal`, `getDateVal`, `fmtDateP`; стили `.date-prec*` в `css/crm.css`; `openModal()` фокусирует первое видимое поле
+- `?v=20261006` на изменённых файлах
+
+Запушено: `crm.html`, `css/crm.css`, `js/utils.js`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `js/analytics.js`, `FIXES.md`.
