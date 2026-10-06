@@ -321,3 +321,13 @@
 
 /* Dioptrija/osa koja nije logična (korak 0,25, plus-cilindar, osa van 0–180) — vidi utils.js */
 .rx-bad { background: #fee2e2 !important; border-color: #f5a3a3 !important; }
+
+/* Datum sa preciznošću: Datum / Godina / ? */
+.date-prec { display:flex; align-items:center; gap:6px; }
+.date-prec > input { flex:1; min-width:0; }
+.date-prec .date-none { flex:1; color:var(--text-light); font-size:15px; padding:0 4px; }
+.date-prec-toggle { display:inline-flex; flex-shrink:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.date-prec-toggle button { border:0; background:#fff; color:var(--text-light); font:inherit; font-size:12px; padding:6px 8px; cursor:pointer; line-height:1; }
+.date-prec-toggle button + button { border-left:1px solid var(--border); }
+.date-prec-toggle button.active { background:var(--section-bg, #F0F6FF); color:#1A6DB5; font-weight:600; }
+.analytics-trend-note { color:var(--text-light); font-size:14px; margin:0 0 18px; line-height:1.6; }

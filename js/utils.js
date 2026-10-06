@@ -12,6 +12,96 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// ═══ DATUM SA PRECIZNOŠĆU: tačan datum / samo godina / nepoznato ═══
+// U bazi: kolona datuma + kolona *_prec ('day' | 'year' | 'unknown').
+// 'year' → datum se čuva kao YYYY-01-01; 'unknown' → datum je null.
+// U formi: pored polja datuma mali prekidač (Datum / Samo godina / Nepoznato);
+// dugmad nisu u Enter-lancu, a polje "godina" jeste kad je vidljivo.
+const DATE_PREC_FIELDS = ['patient-form-visit-date', 'rx-form-date', 'order-form-date'];
+
+function fmtDateP(date, prec) {
+  if (prec === 'unknown' || (!date && prec)) return 'datum nepoznat';
+  if (prec === 'year') return date ? `${date.slice(0, 4)}. g.` : 'datum nepoznat';
+  return fmtDate(date);
+}
+
+// Vrednost se prosleđuje kao string (tačan datum) ili kao {date, prec}.
+function normDateVal(v) {
+  if (v && typeof v === 'object') return { date: v.date || null, prec: v.prec || 'day' };
+  return { date: v || null, prec: 'day' };
+}
+
+function initDatePrec() {
+  DATE_PREC_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.precBound) return;
+    el.dataset.precBound = '1';
+    el.dataset.prec = 'day';
+    const wrap = document.createElement('div');
+    wrap.className = 'date-prec';
+    el.parentNode.insertBefore(wrap, el);
+    wrap.appendChild(el);
+    const year = document.createElement('input');
+    year.type = 'number'; year.id = id + '-year'; year.className = 'date-year';
+    year.min = '1950'; year.max = '2100'; year.placeholder = 'godina'; year.style.display = 'none';
+    wrap.appendChild(year);
+    const none = document.createElement('span');
+    none.className = 'date-none'; none.id = id + '-none'; none.textContent = 'nepoznat'; none.style.display = 'none';
+    wrap.appendChild(none);
+    const sw = document.createElement('span');
+    sw.className = 'date-prec-toggle';
+    sw.innerHTML = [['day', 'Datum'], ['year', 'Godina'], ['unknown', '?']]
+      .map(([p, t]) => `<button type="button" tabindex="-1" data-prec="${p}" title="${p === 'day' ? 'Tačan datum' : p === 'year' ? 'Samo godina' : 'Datum nepoznat'}">${t}</button>`).join('');
+    sw.addEventListener('mousedown', e => e.preventDefault());
+    sw.addEventListener('click', e => {
+      const b = e.target.closest('button[data-prec]');
+      if (!b) return;
+      setDatePrec(id, b.dataset.prec);
+      const focusEl = b.dataset.prec === 'day' ? el : b.dataset.prec === 'year' ? year : null;
+      if (focusEl) { focusEl.focus(); if (focusEl.select) focusEl.select(); }
+    });
+    wrap.appendChild(sw);
+  });
+}
+
+function setDatePrec(id, prec) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  initDatePrec();
+  const year = document.getElementById(id + '-year');
+  if (prec === 'year' && !year.value && el.value) year.value = el.value.slice(0, 4);
+  if (prec === 'day' && !el.value && year.value) el.value = `${year.value}-01-01`;
+  el.dataset.prec = prec;
+  el.style.display = prec === 'day' ? '' : 'none';
+  year.style.display = prec === 'year' ? '' : 'none';
+  document.getElementById(id + '-none').style.display = prec === 'unknown' ? '' : 'none';
+  el.parentNode.querySelectorAll('.date-prec-toggle button').forEach(b => b.classList.toggle('active', b.dataset.prec === prec));
+}
+
+function setDateVal(id, v) {
+  const { date, prec } = normDateVal(v);
+  initDatePrec();
+  const el = document.getElementById(id);
+  const year = document.getElementById(id + '-year');
+  el.value = prec === 'day' ? (date || todayISO()) : '';
+  year.value = prec === 'year' && date ? date.slice(0, 4) : '';
+  setDatePrec(id, prec);
+}
+
+// {date, prec, ok} — ok=false ako je izabrano "Samo godina" a godina nije ispravna.
+function getDateVal(id) {
+  const el = document.getElementById(id);
+  const prec = el?.dataset.prec || 'day';
+  if (prec === 'unknown') return { date: null, prec, ok: true };
+  if (prec === 'year') {
+    const y = parseInt(document.getElementById(id + '-year').value, 10);
+    if (!(y >= 1950 && y <= 2100)) return { date: null, prec, ok: false };
+    return { date: `${y}-01-01`, prec, ok: true };
+  }
+  return { date: el.value || todayISO(), prec: 'day', ok: true };
+}
+document.addEventListener('DOMContentLoaded', initDatePrec);
+
 function lensTotal(priceUnit, discountPct, qty) {
   const p = Number(priceUnit) || 0;
   const disc = Number(discountPct) || 0;
@@ -41,10 +131,10 @@ function openModal(id) {
   const modal = document.getElementById(id);
   modal.classList.add('active');
   setTimeout(() => {
-    const first = modal.querySelector(
+    const first = Array.from(modal.querySelectorAll(
       'form input:not([type="hidden"]):not(:disabled), form select:not(:disabled), form textarea:not(:disabled)'
-    );
-    if (first && first.offsetParent !== null) {
+    )).find(el => el.offsetParent !== null);
+    if (first) {
       first.focus();
       if (typeof first.select === 'function') first.select();
     }
