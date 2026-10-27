@@ -108,6 +108,7 @@ async function loadAnalyticsSection() {
 
   const stats = computeAnalytics({ orders, frames, lenses, framesByOrder, lensesByOrder, patientsMap, prescriptions, rxDatesByOrder, linkedPrescriptionIds });
   renderAnalytics(stats);
+  renderFlBlock({ orders, framesByOrder, lensesByOrder });
 }
 
 function computeAnalytics(ctx) {

@@ -287,3 +287,15 @@ SQL: `prescriptions.rx_date` — снят NOT NULL; новые колонки `p
 Запушено: `crm.html`, `css/crm.css`, `js/utils.js`, `js/patients.js`, `js/prescriptions.js`, `js/orders.js`, `js/analytics.js`, `FIXES.md`.
 
 - Раздел **Porudžbine** (верхняя вкладка): при открытии курсор сразу в поле «Broj porudžbine» (`switchSection()` в `js/nav.js`); `nav.js` подключён с `?v=20261006`
+
+## 2026-10-27 — Analitika: okviri i stakla po periodima
+- Новый блок внизу раздела Analitika (`js/analytics-fl.js`, вызывается из `loadAnalyticsSection()` через `renderFlBlock()`), без новых запросов к БД:
+  - переключатель Mesečno (последние 24 мес.) / Godišnje
+  - 5 плиток: текущий год с 1 января по сегодня против того же периода прошлого года — promet, broj porudžbina, prosečna porudžbina, prosečna cena okvira, prosečan par stakala
+  - stacked-график (Chart.js): okviri / stakla / sočiva / izrada по прайсу (общий % скидки заказа не вычитается — он в Promet)
+  - таблица по периодам: porudžbine, od toga sočiva, promet, prosečna porudžbina, prodato okvira, klijentovih, okviri ukupno, prosečan okvir, stakla ukupno, prosečan par, sočiva, izrada
+  - доли okvira (5 ценовых razreda) и stakala по цене за 1 kom. (6 razreda): по годам с 2024 или по последним 12 месяцам
+- Даты: «samo godina» — только в годовом режиме; «nepoznat» — не учитывается
+- `?v=20261027c` для `analytics.js` и `analytics-fl.js`
+
+Запушено: `crm.html`, `js/analytics.js`, `js/analytics-fl.js`, `FIXES.md`.
