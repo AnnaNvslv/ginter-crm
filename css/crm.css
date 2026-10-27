@@ -192,6 +192,18 @@
 .rx-checkbox-lg:hover { background: var(--section-bg); }
 .rx-checkbox-lg input[type="checkbox"] { width: 28px; height: 28px; cursor: pointer; flex-shrink: 0; }
 
+/* Okvir u porudžbini: "klijentov" i "izrada 500" — krupni čekboksovi kao u receptu. */
+.frame-checkbox {
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  font-size: 17px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 10px;
+}
+.frame-checkbox:hover { background: var(--section-bg); }
+.frame-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
+
+/* "Porudžbinu uneo/la" — iznad Izrade/Popusta/Ukupno; ulazi u Enter-lanac. */
+.entered-by-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 6px 0 12px; }
+.entered-by-label { font-size: 17px; font-weight: 600; }
+
 .type-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
 .type-toggle button { flex: 1; padding: 10px; font-size: 17px; background: var(--section-bg); color: var(--text); }
 .type-toggle button.active { background: var(--accent); color: var(--white); }
