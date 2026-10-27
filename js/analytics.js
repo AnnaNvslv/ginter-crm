@@ -15,18 +15,32 @@ let analyticsOrdersFlat = [];
 let analyticsMonthMap = {};
 let analyticsSelectedMonth = null;
 
+// Supabase (PostgREST) vraća najviše 1000 redova po upitu. Analitika učitava cele
+// tabele, pa se ovde čita stranicu po stranicu dok se ne dobiju svi redovi.
+// buildQuery mora da vrati NOV upit pri svakom pozivu i da ima stabilan .order().
+async function fetchAllRows(buildQuery, pageSize = 1000) {
+  const all = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    all.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return { data: all, error: null };
+}
+
 async function loadAnalyticsSection() {
   analyticsLoaded = true;
   const wrap = document.getElementById('analytics-content');
   wrap.innerHTML = '<div class="empty-state" style="height:auto;padding:60px;">Učitavanje analitike...</div>';
 
   const [ordersRes, framesRes, lensesRes, opRes, rxRes, patientsRes] = await Promise.all([
-    sb.from('orders').select('id, patient_id, order_date, order_date_prec, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method, cl_amount, cl_price, cl_qty').is('deleted_at', null),
-    sb.from('order_frames').select('order_id, purpose, price, is_client'),
-    sb.from('order_lenses').select('order_id, purpose, lens_name, price_unit, discount, qty'),
-    sb.from('order_prescriptions').select('order_id, prescription_id'),
-    sb.from('prescriptions').select('id, patient_id, purpose, rx_date, rx_date_prec'),
-    sb.from('patients').select('id, first_name, last_name').is('deleted_at', null),
+    fetchAllRows(() => sb.from('orders').select('id, patient_id, order_date, order_date_prec, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method, cl_amount, cl_price, cl_qty').is('deleted_at', null).order('id')),
+    fetchAllRows(() => sb.from('order_frames').select('order_id, purpose, price, is_client').order('order_id')),
+    fetchAllRows(() => sb.from('order_lenses').select('order_id, purpose, lens_name, price_unit, discount, qty').order('order_id')),
+    fetchAllRows(() => sb.from('order_prescriptions').select('order_id, prescription_id').order('order_id')),
+    fetchAllRows(() => sb.from('prescriptions').select('id, patient_id, purpose, rx_date, rx_date_prec').order('id')),
+    fetchAllRows(() => sb.from('patients').select('id, first_name, last_name').is('deleted_at', null).order('id')),
   ]);
 
   if (ordersRes.error) {
