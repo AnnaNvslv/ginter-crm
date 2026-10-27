@@ -36,7 +36,7 @@ async function loadAnalyticsSection() {
 
   const [ordersRes, framesRes, lensesRes, opRes, rxRes, patientsRes] = await Promise.all([
     fetchAllRows(() => sb.from('orders').select('id, patient_id, order_date, order_date_prec, envelope_number, order_type, total_amount, discount_percent, izrada_price, payment_method, cl_amount, cl_price, cl_qty').is('deleted_at', null).order('id')),
-    fetchAllRows(() => sb.from('order_frames').select('order_id, purpose, price, is_client').order('order_id')),
+    fetchAllRows(() => sb.from('order_frames').select('order_id, purpose, price, is_client, work_price').order('order_id')),
     fetchAllRows(() => sb.from('order_lenses').select('order_id, purpose, lens_name, price_unit, discount, qty').order('order_id')),
     fetchAllRows(() => sb.from('order_prescriptions').select('order_id, prescription_id').order('order_id')),
     fetchAllRows(() => sb.from('prescriptions').select('id, patient_id, purpose, rx_date, rx_date_prec').order('id')),
@@ -178,7 +178,8 @@ function computeAnalytics(ctx) {
   // ── Okviri / stakla / izrada ──
   const framesTotal = frames.reduce((s, f) => s + (f.is_client ? 0 : (Number(f.price) || 0)), 0);
   const lensesTotalSum = lenses.reduce((s, l) => s + lensTotal(l.price_unit, l.discount, l.qty), 0);
-  const izradaTotal = glassesOrders.reduce((s, o) => s + (Number(o.izrada_price) || 0), 0);
+  const izradaTotal = glassesOrders.reduce((s, o) => s + (Number(o.izrada_price) || 0), 0)
+    + frames.reduce((s, f) => s + (Number(f.work_price) || 0), 0);
 
   // ── Top 5 stakla po prometu ──
   const lensByName = {};
