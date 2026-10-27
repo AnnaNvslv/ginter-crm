@@ -203,6 +203,7 @@
 /* "Porudžbinu uneo/la" — iznad Izrade/Popusta/Ukupno; ulazi u Enter-lanac. */
 .entered-by-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 6px 0 12px; }
 .entered-by-label { font-size: 17px; font-weight: 600; }
+.entered-by-badge { background: var(--section-bg); color: var(--accent); font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 10px; white-space: nowrap; }
 
 .type-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
 .type-toggle button { flex: 1; padding: 10px; font-size: 17px; background: var(--section-bg); color: var(--text); }
