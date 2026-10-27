@@ -82,7 +82,8 @@ function applyDiscount(total, percent) {
 }
 
 function calcGlassesTotal(frames, lenses) {
-  const framesTotal = frames.reduce((sum, f) => sum + (f.is_client ? 0 : Number(f.price) || 0), 0);
+  // work_price = "izrada 500" (čekboks u redu okvira) — dodaje se i za klijentov okvir.
+  const framesTotal = frames.reduce((sum, f) => sum + (f.is_client ? 0 : Number(f.price) || 0) + (Number(f.work_price) || 0), 0);
   const lensesTotal = lenses.reduce((sum, l) => sum + lensTotal(l.price_unit, l.discount, l.qty), 0);
   return Math.round(framesTotal + lensesTotal);
 }
@@ -153,7 +154,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
           <div style="font-weight:700;color:var(--accent);margin-bottom:8px;">${purpose}</div>
           ${rx ? `<div style="color:var(--text-light);font-size:15px;line-height:1.6;margin-bottom:10px;">${rxDetailLines(rx)}</div>` : `<div style="color:var(--text-light);font-size:14px;margin-bottom:10px;">Recept nije povezan</div>`}
           ${(fList.length || lList.length) ? `<div style="border-top:1px solid var(--border);padding-top:8px;">` : ''}
-          ${fList.map(f => `<div class="item-row"><span>Okvir${f.frame_code ? ` (šifra ${f.frame_code})` : ''}:</span><span>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</span></div>${f.comment ? `<div style="color:var(--text-light);font-size:14px;margin:-2px 0 6px;">${escapeHtml(f.comment)}</div>` : ''}`).join('')}
+          ${fList.map(f => `<div class="item-row"><span>Okvir${f.frame_code ? ` (šifra ${f.frame_code})` : ''}:</span><span>${f.is_client ? 'klijentov okvir' : fmtMoney(f.price)}</span></div>${Number(f.work_price) ? `<div class="item-row"><span>Izrada okvira:</span><span>${fmtMoney(f.work_price)}</span></div>` : ''}${f.comment ? `<div style="color:var(--text-light);font-size:14px;margin:-2px 0 6px;">${escapeHtml(f.comment)}</div>` : ''}`).join('')}
           ${lList.map(l => `<div class="item-row"><span>Stakla${l.eye ? ` ${l.eye}` : ''}: ${lensDescriptor(l)}${l.eye ? '' : ` × ${l.qty}`}</span><span>${fmtMoney(lensTotal(l.price_unit, l.discount, l.qty))}</span></div>`).join('')}
           ${lensComments.map(c => `<div style="color:var(--text-light);font-size:14px;margin:-2px 0 6px;">${escapeHtml(c)}</div>`).join('')}
           ${(fList.length || lList.length) ? `</div>` : ''}
@@ -235,7 +236,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
         </div>
       ` : ''}
       ${o.comment ? `<div style="margin-top:10px;color:var(--text-light);">${o.comment}</div>` : ''}
-      ${o.created_by ? `<div class="entry-meta">Uneo/la: ${o.created_by} · ${fmtDateP(o.order_date, o.order_date_prec)}</div>` : ''}
+      ${(o.entered_by || o.created_by) ? `<div class="entry-meta">Uneo/la: ${escapeHtml(o.entered_by || o.created_by)} · ${fmtDateP(o.order_date, o.order_date_prec)}</div>` : ''}
     </div>
   `;
 }
@@ -322,6 +323,19 @@ function focusOrderSubmit() {
   document.querySelector('#order-form button[type="submit"]')?.focus();
 }
 
+// Posle poslednje stavke (stakla/sočiva) Enter ide na "Porudžbinu uneo/la" (Ervin →
+// Anna → Bojana), pa sa Bojane na "Sačuvaj" — ovi čekboksovi se ne preskaču.
+function focusAfterOrderItems() {
+  if (!focusEl('order-form-entered-Ervin')) focusOrderSubmit();
+}
+
+function handleEnteredByLastEnter(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  e.stopPropagation();
+  focusOrderSubmit();
+}
+
 // Zajednička logika "zapamćene cene" (stakla po nazivu, okvir po šifri, sočiva po nazivu):
 // ako je cena prazna — upisuje zapamćenu; ako je cena već bila automatski upisana (_autoPrice)
 // a korisnik nastavi da kuca naziv/šifru — prati novo poklapanje (ili briše cenu ako ga nema).
@@ -343,24 +357,39 @@ function applyRememberedPrice(obj, field, known, inputId) {
 
 // ═══ OKVIRI ═══
 
-function newFrame(purpose) {
-  return { purpose, frame_code: '', is_client: false, price: '', comment: '', _autoPrice: false };
+const FRAME_WORK_PRICE = 500;
+const ORDER_STAFF = ['Ervin', 'Anna', 'Bojana'];
+
+function setEnteredBy(value) {
+  const names = (value || '').split(',').map(s => s.trim()).filter(Boolean);
+  ORDER_STAFF.forEach(n => { const el = document.getElementById(`order-form-entered-${n}`); if (el) el.checked = names.includes(n); });
 }
 
-// Red okvira: namena · šifra · cena · klijentov · ×, a ispod polje za komentar.
-// Namena i komentar imaju enter-skip — Enter ide šifra → cena → "klijentov" (Space je
-// čekira) → sledeće.
+function getEnteredBy() {
+  return ORDER_STAFF.filter(n => document.getElementById(`order-form-entered-${n}`)?.checked).join(', ') || null;
+}
+
+function newFrame(purpose) {
+  return { purpose, frame_code: '', is_client: false, work_price: 0, price: '', comment: '', _autoPrice: false };
+}
+
+// Red okvira: namena · šifra · cena · klijentov · izrada 500 · ×, a ispod polje za komentar.
+// Namena i komentar imaju enter-skip — Enter ide šifra → cena → "klijentov" → "izrada 500"
+// (Space čekira) → sledeće.
 function renderFrameRows() {
   document.getElementById('frames-container').innerHTML = orderFramesDraft.map((f, i) => `
     <div style="margin-bottom:8px;">
-      <div style="display:grid;grid-template-columns:1fr 100px 130px auto 34px;gap:6px;align-items:center;">
+      <div style="display:grid;grid-template-columns:1fr 100px 130px auto auto 34px;gap:6px;align-items:center;">
         <select class="enter-skip" onchange="orderFramesDraft[${i}].purpose=this.value" style="padding:10px;font-size:16px;border:1px solid var(--border);border-radius:10px;">
           ${purposeOptions(f.purpose)}
         </select>
         <input type="text" id="frame-code-${i}" placeholder="šifra" maxlength="4" value="${escAttr(f.frame_code)}" oninput="onFrameCodeInput(${i}, this.value)" style="padding:10px;font-size:16px;">
         <input type="text" id="frame-price-${i}" placeholder="cena" value="${escAttr(f.price)}" oninput="orderFramesDraft[${i}].price=this.value;orderFramesDraft[${i}]._autoPrice=false;updateOrderFormTotal()" style="padding:10px;font-size:16px;text-align:right;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap;">
+        <label class="frame-checkbox">
           <input type="checkbox" id="frame-client-${i}" ${f.is_client ? 'checked' : ''} onchange="orderFramesDraft[${i}].is_client=this.checked;updateOrderFormTotal()"> klijentov
+        </label>
+        <label class="frame-checkbox">
+          <input type="checkbox" id="frame-work-${i}" ${Number(f.work_price) ? 'checked' : ''} onchange="orderFramesDraft[${i}].work_price=this.checked?FRAME_WORK_PRICE:0;updateOrderFormTotal()"> izrada ${FRAME_WORK_PRICE}
         </label>
         <button type="button" onclick="removeFrameRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
@@ -587,7 +616,7 @@ function focusAfterLensRow(i) {
   const nextG = groups[gIdx + 1];
   if (nextG && focusEl(`lens-lens_name-${nextG.rows[0]}`)) return;
   if (orderHasCl && orderClDraft.length && focusEl('cl-name-0')) return;
-  focusOrderSubmit();
+  focusAfterOrderItems();
 }
 
 function addLensRow() {
@@ -678,7 +707,7 @@ function handleClQtyEnter(e, i) {
   e.preventDefault();
   e.stopPropagation();
   if (i < orderClDraft.length - 1 && focusEl(`cl-name-${i + 1}`)) return;
-  focusOrderSubmit();
+  focusAfterOrderItems();
 }
 
 function toggleClDetails(i) {
@@ -851,7 +880,7 @@ function renderPrescriptionRows() {
 }
 
 function glassesPartIsEmpty() {
-  return !orderFramesDraft.some(f => !isBlank(f.frame_code) || !isBlank(f.price) || f.is_client)
+  return !orderFramesDraft.some(f => !isBlank(f.frame_code) || !isBlank(f.price) || f.is_client || Number(f.work_price))
     && !orderLensesDraft.some(l => !isBlank(l.lens_name) || !isBlank(l.price_unit));
 }
 
@@ -1018,6 +1047,7 @@ async function openEditOrderModal(id) {
   document.getElementById('order-form-payment-method').value = o.payment_method || '';
   document.getElementById('order-form-izrada').value = o.izrada_price || '';
   document.getElementById('order-form-discount').value = o.discount_percent || '';
+  setEnteredBy(o.entered_by);
 
   const [framesRes, lensesRes, opRes, clRes] = await Promise.all([
     sb.from('order_frames').select('*').eq('order_id', id).order('created_at'),
@@ -1025,7 +1055,7 @@ async function openEditOrderModal(id) {
     sb.from('order_prescriptions').select('prescription_id').eq('order_id', id),
     sb.from('order_cl_items').select('*').eq('order_id', id).order('created_at'),
   ]);
-  orderFramesDraft = (framesRes.data || []).map(f => ({ ...f, comment: f.comment || '', _autoPrice: false }));
+  orderFramesDraft = (framesRes.data || []).map(f => ({ ...f, comment: f.comment || '', work_price: Number(f.work_price) || 0, _autoPrice: false }));
   orderLensesDraft = pairLensRowsFromDb(lensesRes.data || []);
   orderPrescriptionsDraft = (opRes.data || []).map(r => r.prescription_id);
 
@@ -1137,10 +1167,11 @@ async function saveOrderFormInner(e) {
     has_installment: document.getElementById('order-form-installment').checked,
     discount_percent: Number(document.getElementById('order-form-discount').value) || 0,
     comment: document.getElementById('order-form-comment').value.trim() || null,
+    entered_by: getEnteredBy(),
   };
 
   // Prazni redovi (bez šifre/cene, bez naziva/cene) se ne čuvaju.
-  const frames = hasGlasses ? orderFramesDraft.filter(f => !isBlank(f.frame_code) || !isBlank(f.price) || f.is_client || !isBlank(f.comment)) : [];
+  const frames = hasGlasses ? orderFramesDraft.filter(f => !isBlank(f.frame_code) || !isBlank(f.price) || f.is_client || Number(f.work_price) || !isBlank(f.comment)) : [];
   const lenses = hasGlasses ? orderLensesDraft.filter(l => !isBlank(l.lens_name) || !isBlank(l.price_unit) || !isBlank(l.comment)) : [];
   const clItems = hasCl ? orderClDraft.filter(c => !isBlank(c.cl_name) || !isBlank(c.price)) : [];
 
@@ -1183,7 +1214,7 @@ async function saveOrderFormInner(e) {
   if (frames.length) {
     check(await sb.from('order_frames').insert(frames.map(f => ({
       order_id: savedId, purpose: f.purpose, frame_code: (f.frame_code || '').trim() || null,
-      is_client: !!f.is_client, price: Number(f.price) || 0, comment: (f.comment || '').trim() || null,
+      is_client: !!f.is_client, price: Number(f.price) || 0, work_price: Number(f.work_price) || 0, comment: (f.comment || '').trim() || null,
     }))));
     await updateFramePriceMemory(frames);
   }
