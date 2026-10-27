@@ -192,6 +192,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
       <div class="list-card-header">
         <div class="title">${orderTypeLabel(o.order_type)} ${o.envelope_number ? `<span class="badge">br. ${o.envelope_number}</span>` : ''}</div>
         <div class="actions">
+          ${(o.entered_by || o.created_by) ? `<span class="entered-by-badge">Uneo/la: ${escapeHtml(o.entered_by || o.created_by)}</span>` : ''}
           <span style="color:var(--text-light);font-size:14px;">${fmtDateP(o.order_date, o.order_date_prec)}</span>
           <button class="btn-secondary" onclick="openEditOrderModal('${o.id}')">Izm.</button>
           <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deleteOrder('${o.id}')">Obr.</button>
@@ -236,7 +237,6 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
         </div>
       ` : ''}
       ${o.comment ? `<div style="margin-top:10px;color:var(--text-light);">${o.comment}</div>` : ''}
-      ${(o.entered_by || o.created_by) ? `<div class="entry-meta">Uneo/la: ${escapeHtml(o.entered_by || o.created_by)} · ${fmtDateP(o.order_date, o.order_date_prec)}</div>` : ''}
     </div>
   `;
 }
@@ -389,13 +389,26 @@ function renderFrameRows() {
           <input type="checkbox" id="frame-client-${i}" ${f.is_client ? 'checked' : ''} onchange="orderFramesDraft[${i}].is_client=this.checked;updateOrderFormTotal()"> klijentov
         </label>
         <label class="frame-checkbox">
-          <input type="checkbox" id="frame-work-${i}" ${Number(f.work_price) ? 'checked' : ''} onchange="orderFramesDraft[${i}].work_price=this.checked?FRAME_WORK_PRICE:0;updateOrderFormTotal()"> izrada ${FRAME_WORK_PRICE}
+          <input type="checkbox" id="frame-work-${i}" ${Number(f.work_price) ? 'checked' : ''} onchange="onFrameWorkToggle(${i}, this.checked)"> izrada ${FRAME_WORK_PRICE}
         </label>
         <button type="button" onclick="removeFrameRow(${i})" style="color:#C0392B;padding:6px;">×</button>
       </div>
       <input type="text" class="enter-skip row-comment" placeholder="komentar za okvir (nije obavezno)" value="${escAttr(f.comment)}" oninput="orderFramesDraft[${i}].comment=this.value">
     </div>
   `).join('') || '<div style="color:var(--text-light);font-size:15px;margin-bottom:4px;">Nema dodatih okvira</div>';
+}
+
+// "izrada 500" se naplaćuje samo za klijentov okvir — čekiranje automatski čekira i
+// "klijentov" (odčekiranje izrade ne dira "klijentov").
+function onFrameWorkToggle(i, checked) {
+  const f = orderFramesDraft[i];
+  f.work_price = checked ? FRAME_WORK_PRICE : 0;
+  if (checked && !f.is_client) {
+    f.is_client = true;
+    const el = document.getElementById(`frame-client-${i}`);
+    if (el) el.checked = true;
+  }
+  updateOrderFormTotal();
 }
 
 function onFrameCodeInput(i, code) {
