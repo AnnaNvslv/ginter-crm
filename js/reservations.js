@@ -132,6 +132,7 @@ function openReservationModal(id) {
 async function setReservationStatus(status) {
   const r = reservationRows.find(x => x.id === activeReservationId);
   if (!r || r.status === status) return;
+  const prevStatus = r.status;
   const { error } = await sb.from('frame_reservations')
     .update({ status, status_changed_at: new Date().toISOString() }).eq('id', r.id);
   if (error) { toast('Greška pri promeni statusa', true); return; }
@@ -144,6 +145,12 @@ async function setReservationStatus(status) {
       toast('Status: Kupljena — okvir skinut sa sajta');
       catalogLoaded = false;
     }
+  } else if (prevStatus === 'kupljena' && r.frame_id
+    && !reservationRows.some(x => x.id !== r.id && x.frame_id === r.frame_id && x.status === 'kupljena')) {
+    // Status vraćen sa „Kupljena" — okvir se vraća na sajt.
+    const { error: fe } = await sb.from('frames').update({ is_sold: false, updated_at: new Date().toISOString() }).eq('id', r.frame_id);
+    toast(fe ? 'Status promenjen, ali okvir nije vraćen na sajt' : `Status: ${RES_STATUSES[status].label} — okvir vraćen na sajt`, !!fe);
+    if (!fe) catalogLoaded = false;
   } else {
     toast(`Status: ${RES_STATUSES[status].label}`);
   }
