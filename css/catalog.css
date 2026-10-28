@@ -1,0 +1,75 @@
+
+/* ═══ Rezervacije sa sajta ═══ */
+.res-filters { gap: 8px; flex-wrap: wrap; }
+.res-filter {
+  border: 1px solid var(--border); background: var(--white); color: var(--text);
+  border-radius: 20px; padding: 7px 14px; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.res-filter span { color: var(--text-light); font-weight: 600; margin-left: 4px; }
+.res-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.res-filter.active span { color: #fff; }
+.res-table td { vertical-align: middle; }
+.res-thumb { width: 72px; }
+.res-thumb img { width: 64px; height: 42px; object-fit: contain; border-radius: 8px; background: var(--section-bg); display: block; }
+.res-strong { font-weight: 600; }
+.res-sub { font-size: 14px; color: var(--text-light); }
+.res-phone { color: var(--accent); }
+.res-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.res-nova { background: #FDECEA; color: #A93226; }
+.res-kontaktirani { background: #FFF4DE; color: #8A5A00; }
+.res-odlozena { background: var(--section-bg); color: var(--accent); }
+.res-kupljena { background: #E6F4EA; color: #1E7B3A; }
+.res-otkazana { background: #F1F1F1; color: #6B7280; }
+.res-detail { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.res-detail-photo img { width: 200px; max-height: 140px; object-fit: contain; border-radius: 12px; background: var(--section-bg); }
+.res-detail-info { flex: 1; min-width: 220px; }
+.res-phone-link { display: inline-block; margin-top: 2px; font-size: 19px; font-weight: 700; color: var(--accent); text-decoration: none; }
+.res-status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.res-status-btn { border: 1px solid var(--border); background: var(--white); border-radius: 20px; padding: 8px 16px; font-size: 15px; font-weight: 600; cursor: pointer; color: var(--text-light); }
+.res-status-btn.active { border-color: currentColor; }
+.res-status-btn.active.res-nova { background: #FDECEA; color: #A93226; }
+.res-status-btn.active.res-kontaktirani { background: #FFF4DE; color: #8A5A00; }
+.res-status-btn.active.res-odlozena { background: var(--section-bg); color: var(--accent); }
+.res-status-btn.active.res-kupljena { background: #E6F4EA; color: #1E7B3A; }
+.res-status-btn.active.res-otkazana { background: #F1F1F1; color: #374151; }
+.badge-site { background: #E6F4EA; color: #1E7B3A; }
+
+/* ═══ Katalog okvira ═══ */
+.cat-count { font-size: 14px; color: var(--text-light); margin: -4px 0 12px; }
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.cat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; cursor: pointer; }
+.cat-card:hover { border-color: var(--accent); }
+.cat-photo { height: 120px; border-radius: 10px; background: var(--section-bg); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--text-light); font-size: 13px; }
+.cat-photo img { width: 100%; height: 100%; object-fit: contain; }
+.cat-title { font-weight: 600; margin-top: 10px; font-size: 16px; }
+.cat-meta { font-size: 14px; color: var(--text-light); }
+.cat-price { color: var(--text); font-weight: 600; margin-bottom: 6px; }
+.cat-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.cat-pill-ok { background: #E6F4EA; color: #1E7B3A; }
+.cat-pill-muted { background: #F1F1F1; color: #6B7280; }
+
+#frame-modal .field-grid { grid-template-columns: repeat(3, 1fr); }
+.field-error { color: var(--danger); font-size: 13px; margin-top: 3px; }
+.sun-block { background: var(--section-bg); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; }
+.frame-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.frame-photo-tile { position: relative; width: 120px; height: 84px; border-radius: 10px; border: 1px solid var(--border); background: var(--section-bg); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-light); }
+.frame-photo-tile img { width: 100%; height: 100%; object-fit: contain; }
+.frame-photo-tile.main { border: 2px solid var(--accent); }
+.frame-photo-tile.add { border-style: dashed; cursor: pointer; background: var(--white); font-weight: 600; }
+.frame-photo-main { position: absolute; left: 6px; bottom: 6px; background: var(--accent); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 6px; }
+.frame-photo-btn { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(255,255,255,0.92); color: var(--text); cursor: pointer; font-size: 15px; line-height: 1; padding: 0; }
+.frame-photo-btn.left { left: 4px; right: auto; color: var(--accent); }
+.desc-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.desc-tabs button { border: 1px solid var(--border); background: var(--white); border-radius: 10px; padding: 5px 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-light); }
+.desc-tabs button.filled { color: var(--text); }
+.desc-tabs button.filled::after { content: ' ✓'; color: #1E7B3A; }
+.desc-tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.desc-tabs button.active::after { color: #fff; }
+.desc-hint { font-size: 13px; color: var(--text-light); margin-left: 6px; }
+.desc-area { width: 100%; font-family: inherit; font-size: 17px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; }
+
+@media (max-width: 768px) {
+  #frame-modal .field-grid { grid-template-columns: 1fr 1fr; }
+  .res-table .res-thumb { display: none; }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+}

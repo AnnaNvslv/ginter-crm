@@ -9,6 +9,8 @@ function switchSection(section) {
   if (section === 'exams' && !examsLoaded) loadExamsSection(true);
   if (section === 'debts') loadDebtsSection();
   if (section === 'analitika' && !analyticsLoaded) loadAnalyticsSection();
+  if (section === 'rezervacije') loadReservationsSection();
+  if (section === 'katalog' && !catalogLoaded) loadCatalogSection();
   // Porudžbine: kursor odmah u polje "Broj porudžbine" — najčešće se traži po broju sa koverte.
   if (section === 'orders') setTimeout(() => document.getElementById('orders-search-ordernum')?.focus(), 0);
 }
