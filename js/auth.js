@@ -1,12 +1,18 @@
+// Вход через Supabase Auth. Кнопки Ervin/Bojana/Anna сохранены — имя → служебный email.
+const STAFF = {
+  Ervin:  { email: 'ervin@ginter-crm.local',  role: 'staff' },
+  Bojana: { email: 'bojana@ginter-crm.local', role: 'staff' },
+  Anna:   { email: 'anna@ginter-crm.local',   role: 'admin' },
+};
+
 async function login(name, password) {
-  const { data, error } = await sb.rpc('verify_login', { p_name: name, p_password: password });
+  const s = STAFF[name];
+  if (!s) return { ok: false };
 
-  if (error || !data || !data.length) {
-    return { ok: false };
-  }
+  const { data, error } = await sb.auth.signInWithPassword({ email: s.email, password });
+  if (error || !data?.session) return { ok: false };
 
-  const user = data[0];
-  localStorage.setItem('ginter_user', JSON.stringify({ id: user.id, name: user.name, role: user.role }));
+  localStorage.setItem('ginter_user', JSON.stringify({ id: data.user.id, name, role: s.role }));
   return { ok: true };
 }
 
@@ -15,11 +21,18 @@ function getCurrentUser() {
   return raw ? JSON.parse(raw) : null;
 }
 
-function logout() {
+async function logout() {
+  try { await sb.auth.signOut(); } catch (e) {}
   localStorage.removeItem('ginter_user');
   location.href = 'index.html';
 }
 
 function requireAuth() {
-  if (!getCurrentUser()) location.href = 'index.html';
+  if (!getCurrentUser()) { location.href = 'index.html'; return; }
+  sb.auth.getSession().then(({ data }) => {
+    if (!data?.session) {
+      localStorage.removeItem('ginter_user');
+      location.href = 'index.html';
+    }
+  });
 }
