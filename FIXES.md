@@ -299,3 +299,14 @@ SQL: `prescriptions.rx_date` — снят NOT NULL; новые колонки `p
 - `?v=20261027c` для `analytics.js` и `analytics-fl.js`
 
 Запушено: `crm.html`, `js/analytics.js`, `js/analytics-fl.js`, `FIXES.md`.
+
+## 2026-10-28 — Bezbednost, katalog okvira, rezervacije sa sajta, analitika sajta
+SQL выполнен Анной.
+- **Bezbednost**: вход через Supabase Auth (`anna@ / bojana@ / ervin@ginter-crm.local`), регистрация закрыта. RLS `staff_only` через `public.is_staff()` на всех таблицах; у anon нет доступа к данным; `verify_login` и таблица `users` закрыты. Проверено: anon — отказ, чужой авторизованный — 0 строк
+- **Katalog** (вкладка): таблица `frames` (фото в bucket `frame-photos`, бренд/модель/šifra, пол, оптика/солнце/детские, материал, цвет, размер, линзы солнцезащитных, скидка akcija/ucenjeno с причиной, klip-on), подсказки бренда/модели/цвета, кнопка «Dodaj opis» — описание на 4 языках (`js/catalog.js`, `js/catalog-desc.js`, `css/catalog.css`)
+- **Rezervacije** (вкладка): `frame_reservations`, статусы Nova / Kontaktirani / Odložena / Kupljena / Otkazana, бейдж новых. Из «Kupljena» — «Kreiraj porudžbinu»: пациент ищется по телефону или создаётся, заказ помечается `orders.source='sajt'` + `reservation_id`, в карточке заказа — «🌐 Sa sajta», оправа снимается с сайта (`is_sold`) (`js/reservations.js`)
+- Edge Function `reserve-frame`: приём брони с сайта, антиспам (honeypot, лимиты), уведомление Анне в Telegram с фото оправы
+- **Analitika → Prodaja sa sajta** (`js/analytics-site.js`): брони всего / в работе, куплено / отменено, конверсия, оборот и средний заказ с сайта, таблица за 12 месяцев
+- `?v=20261028*` на новых/изменённых файлах
+
+Запушено: `crm.html`, `js/auth.js`, `js/nav.js`, `js/catalog.js`, `js/catalog-desc.js`, `js/reservations.js`, `js/analytics-site.js`, `css/catalog.css`, `FIXES.md`.
