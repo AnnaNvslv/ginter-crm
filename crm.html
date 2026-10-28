@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/crm.css?v=20261027b">
-<link rel="stylesheet" href="css/catalog.css?v=20261028">
+<link rel="stylesheet" href="css/catalog.css?v=20261028b">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
@@ -413,7 +413,7 @@
         <div><label>Brend</label><input type="text" id="frame-form-brand" list="frame-brand-list" placeholder="Ray-Ban"></div>
         <div><label>Model</label><input type="text" id="frame-form-model" placeholder="RB5154 Clubmaster"></div>
         <div><label>Šifra</label><input type="text" id="frame-form-code" placeholder="12345"></div>
-        <div><label>Cena (RSD)</label><input type="number" id="frame-form-price" min="0" placeholder="18900"></div>
+        <div><label>Cena (RSD)</label><input type="number" id="frame-form-price" min="0" placeholder="18900" oninput="onFramePriceInput()"></div>
         <div>
           <label>Vrsta</label>
           <select id="frame-form-category" style="width:100%;" onchange="toggleFrameSunFields()">
@@ -432,6 +432,26 @@
           <label>Veličina</label><input type="text" id="frame-form-size" placeholder="58-21-145">
           <div id="frame-size-error" class="field-error" style="display:none;">Format: 58-21-145</div>
         </div>
+      </div>
+
+      <div class="frame-flags">
+        <label class="frame-checkbox"><input type="checkbox" id="frame-form-discounted" class="enter-skip" onchange="toggleFrameDiscount()"> Snižena cena</label>
+        <label class="frame-checkbox"><input type="checkbox" id="frame-form-clip" class="enter-skip"> Sa klipom (polarizacioni nastavak)</label>
+      </div>
+      <div id="frame-discount-fields" class="sun-block" style="display:none;">
+        <div class="discount-type-row">
+          <label class="frame-checkbox"><input type="radio" name="frame-discount-type" id="frame-discount-akcija" value="akcija" class="enter-skip" onchange="toggleFrameDiscountReason()" checked> Akcija (rasprodaja)</label>
+          <label class="frame-checkbox"><input type="radio" name="frame-discount-type" id="frame-discount-ucenjeno" value="ucenjeno" class="enter-skip" onchange="toggleFrameDiscountReason()"> Ucenjeno (oštećenje)</label>
+        </div>
+        <div class="field-grid">
+          <div><label>Nova cena (RSD)</label><input type="number" id="frame-form-sale-price" min="0" oninput="onSalePriceInput()"></div>
+          <div><label>Popust (%)</label><input type="number" id="frame-form-sale-pct" min="1" max="99" step="1" oninput="onSalePctInput()"></div>
+        </div>
+        <div id="frame-reason-wrap" style="display:none;">
+          <label>Razlog ucenjenja (vidi se na sajtu)</label>
+          <input type="text" id="frame-form-discount-reason" placeholder="ogrebotina na desnom staklu" style="width:100%;">
+        </div>
+        <div id="frame-discount-error" class="field-error" style="display:none;"></div>
       </div>
 
       <div id="frame-sun-fields" class="sun-block" style="display:none;">
@@ -496,7 +516,7 @@
 <script src="js/patients.js?v=20261006"></script>
 <script src="js/prescriptions.js?v=20261006"></script>
 <script src="js/orders.js?v=20261027b"></script>
-<script src="js/catalog.js?v=20261028"></script>
+<script src="js/catalog.js?v=20261028b"></script>
 <script src="js/reservations.js?v=20261028"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="js/analytics.js?v=20261027c"></script>
