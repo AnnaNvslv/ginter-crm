@@ -47,138 +47,153 @@ function canonicalValue(value, existing) {
 
 // ── Automatski opis ──
 
-const DESC_DICT = {
-  material: {
-    metal:       { sr: 'metal', hu: 'fém', en: 'metal', ru: 'металл' },
-    acetat:      { sr: 'acetat', hu: 'acetát', en: 'acetate', ru: 'ацетат' },
-    titan:       { sr: 'titan', hu: 'titán', en: 'titanium', ru: 'титан' },
-    tr90:        { sr: 'TR90', hu: 'TR90', en: 'TR90', ru: 'TR90' },
-    plastika:    { sr: 'plastika', hu: 'műanyag', en: 'plastic', ru: 'пластик' },
-    kombinovani: { sr: 'kombinovani (metal i acetat)', hu: 'kombinált (fém és acetát)', en: 'combined (metal and acetate)', ru: 'комбинированный (металл и ацетат)' },
+// Tekst u stilu internet prodavnice: ne ponavlja parametre (oni se na sajtu prikazuju
+// posebno), nego objašnjava šta oni znače za kupca. Bez reči „recept".
+const DESC_TEXT = {
+  introOptical: {
+    sr: n => `${n} je optički okvir namenjen svakodnevnom nošenju.`,
+    hu: n => `${n} – mindennapi viselésre tervezett optikai keret.`,
+    en: n => `${n} is an optical frame designed for everyday wear.`,
+    ru: n => `${n} — оправа для повседневной носки.`,
   },
-  color: {
-    crna:       { hu: 'fekete', en: 'black', ru: 'чёрный' },
-    bela:       { hu: 'fehér', en: 'white', ru: 'белый' },
-    braon:      { hu: 'barna', en: 'brown', ru: 'коричневый' },
-    havana:     { hu: 'havanna', en: 'havana (tortoiseshell)', ru: 'черепаховый (гавана)' },
-    zlatna:     { hu: 'arany', en: 'gold', ru: 'золотой' },
-    srebrna:    { hu: 'ezüst', en: 'silver', ru: 'серебристый' },
-    siva:       { hu: 'szürke', en: 'grey', ru: 'серый' },
-    plava:      { hu: 'kék', en: 'blue', ru: 'синий' },
-    zelena:     { hu: 'zöld', en: 'green', ru: 'зелёный' },
-    crvena:     { hu: 'piros', en: 'red', ru: 'красный' },
-    bordo:      { hu: 'bordó', en: 'burgundy', ru: 'бордовый' },
-    roze:       { hu: 'rózsaszín', en: 'pink', ru: 'розовый' },
-    'ljubičasta': { hu: 'lila', en: 'purple', ru: 'фиолетовый' },
-    'bež':      { hu: 'bézs', en: 'beige', ru: 'бежевый' },
-    providna:   { hu: 'átlátszó', en: 'transparent', ru: 'прозрачный' },
+  introOpticalKids: {
+    sr: n => `${n} je dečiji optički okvir prilagođen aktivnom danu deteta.`,
+    hu: n => `${n} – gyermek optikai keret, amely bírja az aktív napokat.`,
+    en: n => `${n} is a children's optical frame built for an active day.`,
+    ru: n => `${n} — детская оправа, рассчитанная на активный день ребёнка.`,
+  },
+  introSun: {
+    sr: n => `${n} su sunčane naočare za svakodnevnu zaštitu očiju od jakog svetla.`,
+    hu: n => `${n} – napszemüveg a szem mindennapi védelmére az erős fény ellen.`,
+    en: n => `${n} are sunglasses for everyday protection from bright light.`,
+    ru: n => `${n} — солнцезащитные очки для ежедневной защиты глаз от яркого света.`,
+  },
+  introSunKids: {
+    sr: n => `${n} su dečije sunčane naočare koje štite osetljive oči deteta od sunca.`,
+    hu: n => `${n} – gyermek napszemüveg, amely óvja a gyermek érzékeny szemét a naptól.`,
+    en: n => `${n} are children's sunglasses that protect sensitive young eyes from the sun.`,
+    ru: n => `${n} — детские солнцезащитные очки, которые берегут чувствительные глаза ребёнка от солнца.`,
+  },
+  material: {
+    titan: {
+      sr: 'Titanijum je lagan, čvrst i hipoalergen materijal: okvir se gotovo ne oseća na licu i dugo zadržava oblik.',
+      hu: 'A titán könnyű, erős és antiallergén anyag: a keret szinte nem érezhető az arcon, és hosszú ideig megtartja formáját.',
+      en: 'Titanium is light, strong and hypoallergenic: the frame is barely felt on the face and keeps its shape for years.',
+      ru: 'Титан — лёгкий, прочный и гипоаллергенный материал: оправа почти не ощущается на лице и надолго сохраняет форму.',
+    },
+    acetat: {
+      sr: 'Acetat je kvalitetan materijal bogatih tonova, prijatan na dodir, a drške se lako prilagođavaju obliku glave.',
+      hu: 'Az acetát minőségi, mély színű, kellemes tapintású anyag, a szárak pedig könnyen a fej formájához igazíthatók.',
+      en: 'Acetate is a quality material with rich colour and a pleasant feel, and the temples are easy to adjust to the shape of the head.',
+      ru: 'Ацетат — качественный материал с глубоким цветом, приятный на ощупь, а заушники легко подгоняются по форме головы.',
+    },
+    metal: {
+      sr: 'Metalni okvir je tanak i lagan, diskretnog, klasičnog izgleda.',
+      hu: 'A fémkeret vékony és könnyű, letisztult, klasszikus megjelenéssel.',
+      en: 'The metal frame is thin and light, with a neat, classic look.',
+      ru: 'Металлическая оправа тонкая и лёгкая, с аккуратным классическим силуэтом.',
+    },
+    tr90: {
+      sr: 'TR90 je savitljiv, izuzetno lagan materijal otporan na udarce, pa okvir lako podnosi svakodnevno opterećenje.',
+      hu: 'A TR90 rugalmas, rendkívül könnyű és ütésálló anyag, így a keret jól bírja a mindennapi használatot.',
+      en: 'TR90 is a flexible, ultra-light and impact-resistant material, so the frame easily handles everyday wear.',
+      ru: 'TR90 — гибкий, очень лёгкий и ударопрочный материал, поэтому оправа спокойно переносит ежедневные нагрузки.',
+    },
+    plastika: {
+      sr: 'Plastični okvir je lagan i praktičan za svakodnevnu upotrebu.',
+      hu: 'A műanyag keret könnyű és praktikus a mindennapi használatra.',
+      en: 'The plastic frame is light and practical for everyday use.',
+      ru: 'Пластиковая оправа лёгкая и практичная для повседневного использования.',
+    },
+    kombinovani: {
+      sr: 'Kombinacija metala i acetata spaja lakoću metalnog okvira i udobnost acetata.',
+      hu: 'A fém és az acetát kombinációja egyesíti a fémkeret könnyűségét és az acetát kényelmét.',
+      en: 'The combination of metal and acetate brings together the lightness of metal and the comfort of acetate.',
+      ru: 'Сочетание металла и ацетата объединяет лёгкость металлической оправы и комфорт ацетата.',
+    },
   },
   lensType: {
-    jednobojna:    { sr: 'jednobojna', hu: 'egyszínű', en: 'solid tint', ru: 'однотонные' },
-    gradijent:     { sr: 'gradijent', hu: 'színátmenetes', en: 'gradient', ru: 'градиентные' },
-    ogledalo:      { sr: 'sa efektom ogledala', hu: 'tükrös', en: 'mirrored', ru: 'зеркальные' },
-    fotohromatska: { sr: 'fotohromatska', hu: 'fotokromatikus', en: 'photochromic', ru: 'фотохромные' },
+    gradijent: {
+      sr: 'Gradijentna sočiva su tamnija u gornjem i svetlija u donjem delu: štite od sunca, a ne smetaju kada pogledate u telefon ili knjigu.',
+      hu: 'A színátmenetes lencsék felül sötétebbek, alul világosabbak: védenek a naptól, és nem zavarnak, ha a telefonra vagy egy könyvre néz.',
+      en: 'Gradient lenses are darker at the top and lighter at the bottom: they shade your eyes without getting in the way when you look down at a phone or a book.',
+      ru: 'Градиентные линзы темнее сверху и светлее снизу: защищают от солнца и не мешают, когда смотрите в телефон или книгу.',
+    },
+    ogledalo: {
+      sr: 'Ogledalski sloj dodatno odbija jako svetlo, što je korisno na vodi, snegu i plaži.',
+      hu: 'A tükrös bevonat további erős fényt ver vissza, ami víz mellett, havon és a strandon hasznos.',
+      en: 'The mirrored coating reflects extra glare, which helps by the water, on snow and at the beach.',
+      ru: 'Зеркальное покрытие дополнительно отражает яркий свет — это удобно у воды, на снегу и на пляже.',
+    },
+    fotohromatska: {
+      sr: 'Fotohromatska sočiva tamne na suncu i posvetle u zatvorenom prostoru.',
+      hu: 'A fotokromatikus lencsék napfényben besötétednek, beltérben kivilágosodnak.',
+      en: 'Photochromic lenses darken in sunlight and clear up indoors.',
+      ru: 'Фотохромные линзы темнеют на солнце и светлеют в помещении.',
+    },
+    jednobojna: {
+      sr: 'Jednobojna sočiva ravnomerno smanjuju jačinu svetla u celom vidnom polju.',
+      hu: 'Az egyszínű lencsék a teljes látómezőben egyenletesen csökkentik a fényerőt.',
+      en: 'Solid-tint lenses reduce brightness evenly across the whole field of view.',
+      ru: 'Однотонные линзы равномерно снижают яркость по всему полю зрения.',
+    },
   },
-  lensMaterial: {
-    staklo:             { sr: 'staklo (mineralno)', hu: 'üveg (ásványi)', en: 'glass (mineral)', ru: 'стекло (минеральное)' },
-    polikarbonat:       { sr: 'polikarbonat', hu: 'polikarbonát', en: 'polycarbonate', ru: 'поликарбонат' },
-    'cr-39 (organsko)': { sr: 'CR-39 (organsko)', hu: 'CR-39 (szerves)', en: 'CR-39 (organic)', ru: 'CR-39 (органическое)' },
-    nylon:              { sr: 'nylon', hu: 'nylon', en: 'nylon', ru: 'нейлон' },
+  polarized: {
+    sr: 'Polarizovana sočiva uklanjaju odsjaj sa vode, mokrog puta i snega, pa je slika jasnija, a oči se manje umaraju, posebno tokom vožnje.',
+    hu: 'A polarizált lencsék kiszűrik a víz, a nedves úttest és a hó tükröződését: a kép élesebb, a szem kevésbé fárad, különösen vezetés közben.',
+    en: 'Polarized lenses remove glare from water, wet roads and snow, giving a sharper image and less eye strain, especially when driving.',
+    ru: 'Поляризационные линзы убирают блики от воды, мокрой дороги и снега: изображение чётче, глаза меньше устают, особенно за рулём.',
+  },
+  uv: {
+    sr: 'Zaštita UV400 blokira UVA i UVB zračenje.',
+    hu: 'Az UV400 védelem kiszűri az UVA- és UVB-sugárzást.',
+    en: 'UV400 protection blocks UVA and UVB radiation.',
+    ru: 'Защита UV400 блокирует ультрафиолет UVA и UVB.',
+  },
+  filter: {
+    0: { sr: 'Kategorija filtera 0 je za oblačno vreme i zatvoren prostor.', hu: 'A 0-s szűrőkategória borús időre és beltérre való.', en: 'Filter category 0 is for overcast weather and indoors.', ru: 'Категория фильтра 0 — для пасмурной погоды и помещений.' },
+    1: { sr: 'Kategorija filtera 1 je za slabo sunce.', hu: 'Az 1-es szűrőkategória gyenge napfényre való.', en: 'Filter category 1 is for weak sunlight.', ru: 'Категория фильтра 1 — для неяркого солнца.' },
+    2: { sr: 'Kategorija filtera 2 je za umereno sunce, pogodna za grad i svakodnevno nošenje.', hu: 'A 2-es szűrőkategória mérsékelt napfényre, városi és mindennapi viseletre való.', en: 'Filter category 2 is for moderate sunlight, suited to the city and everyday wear.', ru: 'Категория фильтра 2 — для умеренного солнца, подходит для города и повседневной носки.' },
+    3: { sr: 'Kategorija filtera 3 je za jako sunce: more, planine, letnji dani.', hu: 'A 3-as szűrőkategória erős napfényre való: tenger, hegyek, nyári napok.', en: 'Filter category 3 is for strong sunlight: sea, mountains, summer days.', ru: 'Категория фильтра 3 — для яркого солнца: море, горы, летние дни.' },
+    4: { sr: 'Kategorija filtera 4 je za izuzetno jako sunce (visoke planine, glečeri) i nije pogodna za vožnju.', hu: 'A 4-es szűrőkategória rendkívül erős napfényre (magashegység, gleccserek) való, vezetéshez nem alkalmas.', en: 'Filter category 4 is for extremely bright sunlight (high mountains, glaciers) and is not suitable for driving.', ru: 'Категория фильтра 4 — для экстремально яркого солнца (высокогорье, ледники); не подходит для вождения.' },
+  },
+  clip: {
+    sr: 'U kompletu je klip sa polarizovanim sočivima: jednim pokretom okvir postaje sunčane naočare, pa vam ne treba drugi par.',
+    hu: 'A csomag polarizált clip-on előtétet tartalmaz: egy mozdulattal napszemüveggé alakítja a keretet, így nincs szükség második szemüvegre.',
+    en: 'A polarized clip-on is included: in one move the frame becomes sunglasses, so you don\'t need a second pair.',
+    ru: 'В комплекте поляризационная накладка-клипон: одним движением оправа превращается в солнцезащитные очки, и вторая пара не нужна.',
+  },
+  outroOptical: {
+    sr: 'U Optici Ginter u okvir ugrađujemo sočiva prema vašoj dioptriji: jednožižna, progresivna ili za rad za računarom.',
+    hu: 'A Ginter Optikában a keretbe az Ön dioptriájának megfelelő lencséket építünk: egyfókuszú, progresszív vagy számítógépes munkához valót.',
+    en: 'At Optika Ginter we fit the frame with lenses for your dioptre: single vision, progressive or computer lenses.',
+    ru: 'В «Оптике Гинтер» мы установим в оправу линзы под ваши диоптрии: однофокальные, прогрессивные или для работы за компьютером.',
   },
 };
-
-const DESC_GENDER = {
-  opticki: {
-    sr: { zenski: 'ženski', muski: 'muški', uniseks: 'uniseks', deciji: 'dečiji' },
-    hu: { zenski: 'női', muski: 'férfi', uniseks: 'uniszex', deciji: 'gyermek' },
-    en: { zenski: "women's", muski: "men's", uniseks: 'unisex', deciji: "children's" },
-    ru: { zenski: 'женская', muski: 'мужская', uniseks: 'унисекс', deciji: 'детская' },
-  },
-  suncani: {
-    sr: { zenski: 'ženske', muski: 'muške', uniseks: 'uniseks', deciji: 'dečije' },
-    hu: { zenski: 'női', muski: 'férfi', uniseks: 'uniszex', deciji: 'gyermek' },
-    en: { zenski: "women's", muski: "men's", uniseks: 'unisex', deciji: "children's" },
-    ru: { zenski: 'женские', muski: 'мужские', uniseks: 'унисекс', deciji: 'детские' },
-  },
-};
-
-// Vrednost iz rečnika; nepoznata (ručno upisana) vrednost ostaje kako je upisana.
-function descTerm(group, value, lang) {
-  const v = (value || '').trim();
-  if (!v) return '';
-  const entry = DESC_DICT[group][v.toLowerCase()];
-  if (!entry) return v;
-  return entry[lang] || v;
-}
-
-// Boja može biti "crna / zlatna" — prevodi se svaki deo.
-function descColor(value, lang) {
-  const v = (value || '').trim();
-  if (!v) return '';
-  if (lang === 'sr') return v;
-  return v.split(/\s*([\/,])\s*/).map(part =>
-    part === '/' || part === ',' ? part : (DESC_DICT.color[part.toLowerCase()]?.[lang] || part)
-  ).join(' ').replace(/\s+([,])/g, '$1').replace(/\s*\/\s*/g, ' / ');
-}
-
-function descSize(size, lang) {
-  if (!size) return '';
-  const [a, b, c] = size.split('-');
-  return {
-    sr: `Veličina: ${size} (širina sočiva ${a} mm, most ${b} mm, dužina drški ${c} mm).`,
-    hu: `Méret: ${size} (lencseszélesség ${a} mm, híd ${b} mm, szárhossz ${c} mm).`,
-    en: `Size: ${size} (lens width ${a} mm, bridge ${b} mm, temple length ${c} mm).`,
-    ru: `Размер: ${size} (ширина линзы ${a} мм, мост ${b} мм, длина заушника ${c} мм).`,
-  }[lang];
-}
 
 function buildFrameDescription(d, lang) {
   const name = `${d.brand} ${d.model}`.trim();
   const isSun = d.category === 'suncani';
-  const g = DESC_GENDER[isSun ? 'suncani' : 'opticki'][lang][d.gender] || '';
-  const mat = descTerm('material', d.material, lang);
-  const col = descColor(d.color, lang);
+  const kids = d.gender === 'deciji';
+  const T = DESC_TEXT;
   const parts = [];
 
-  if (!isSun) {
-    parts.push({
-      sr: `${name} — ${g} optički okvir za izradu naočara sa korektivnim sočivima.`,
-      hu: `${name} — ${g} optikai keret korrekciós lencsés szemüveg készítéséhez.`,
-      en: `${name} — ${g} optical frame for glasses with corrective lenses.`,
-      ru: `${name} — ${g} медицинская оправа для изготовления очков с корригирующими линзами.`,
-    }[lang]);
-    if (mat) parts.push({ sr: `Materijal okvira: ${mat}.`, hu: `Keret anyaga: ${mat}.`, en: `Frame material: ${mat}.`, ru: `Материал оправы: ${mat}.` }[lang]);
-    if (col) parts.push({ sr: `Boja: ${col}.`, hu: `Szín: ${col}.`, en: `Colour: ${col}.`, ru: `Цвет: ${col}.` }[lang]);
-  } else {
-    parts.push({
-      sr: `${name} — ${g} sunčane naočare.`,
-      hu: `${name} — ${g} napszemüveg.`,
-      en: `${name} — ${g} sunglasses.`,
-      ru: `${name} — ${g} солнцезащитные очки.`,
-    }[lang]);
-    const frame = [mat, col].filter(Boolean).join(', ');
-    if (frame) parts.push({ sr: `Okvir: ${frame}.`, hu: `Keret: ${frame}.`, en: `Frame: ${frame}.`, ru: `Оправа: ${frame}.` }[lang]);
-    const lens = [
-      descTerm('lensType', d.sun_lens_type, lang),
-      descTerm('lensMaterial', d.sun_lens_material, lang),
-      d.polarized ? { sr: 'polarizovana', hu: 'polarizált', en: 'polarized', ru: 'поляризационные' }[lang] : '',
-    ].filter(Boolean).join(', ');
-    if (lens) parts.push({ sr: `Sočiva: ${lens}.`, hu: `Lencse: ${lens}.`, en: `Lenses: ${lens}.`, ru: `Линзы: ${lens}.` }[lang]);
-    if (d.uv_protection) parts.push({ sr: `UV zaštita: ${d.uv_protection}.`, hu: `UV-védelem: ${d.uv_protection}.`, en: `UV protection: ${d.uv_protection}.`, ru: `Защита от УФ: ${d.uv_protection}.` }[lang]);
-    if (d.filter_category !== '' && d.filter_category != null) parts.push({ sr: `Kategorija filtera: ${d.filter_category}.`, hu: `Szűrőkategória: ${d.filter_category}.`, en: `Filter category: ${d.filter_category}.`, ru: `Категория фильтра: ${d.filter_category}.` }[lang]);
+  parts.push((isSun ? (kids ? T.introSunKids : T.introSun) : (kids ? T.introOpticalKids : T.introOptical))[lang](name));
+
+  const matKey = (d.material || '').trim().toLowerCase();
+  if (T.material[matKey]) parts.push(T.material[matKey][lang]);
+
+  if (isSun) {
+    const lt = T.lensType[(d.sun_lens_type || '').trim().toLowerCase()];
+    if (lt) parts.push(lt[lang]);
+    if (d.polarized) parts.push(T.polarized[lang]);
+    if (/400|100/.test(d.uv_protection || '')) parts.push(T.uv[lang]);
+    const fc = T.filter[String(d.filter_category)];
+    if (fc && d.filter_category !== '' && d.filter_category != null) parts.push(fc[lang]);
   }
 
-  if (d.has_clip_on) {
-    parts.push({
-      sr: 'U kompletu je nastavak (klip) sa polarizovanim sočivima koji se postavlja na okvir i štiti od sunca.',
-      hu: 'A csomag tartalmaz egy polarizált lencsés előtétet (clip-on), amely a keretre helyezhető napvédelemhez.',
-      en: 'Includes a clip-on attachment with polarized lenses that fits onto the frame for sun protection.',
-      ru: 'В комплекте накладка (клипон) с поляризационными линзами, которая крепится на оправу и защищает от солнца.',
-    }[lang]);
-  }
-
-  const size = descSize(d.size, lang);
-  if (size) parts.push(size);
+  if (d.has_clip_on) parts.push(T.clip[lang]);
+  if (!isSun) parts.push(T.outroOptical[lang]);
   return parts.join(' ');
 }
 
@@ -211,16 +226,6 @@ function generateFrameDescriptions() {
     toast('Veličina mora biti u formatu 58-21-145', true);
     return;
   }
-
-  const missing = [];
-  if (!d.material) missing.push('materijal');
-  if (!d.color) missing.push('boja');
-  if (!d.size) missing.push('veličina');
-  if (d.category === 'suncani') {
-    if (!d.sun_lens_type) missing.push('vrsta sočiva');
-    if (!d.uv_protection) missing.push('UV zaštita');
-  }
-  if (missing.length && !confirm(`Nisu popunjeni: ${missing.join(', ')}.\nOpis će biti bez tih podataka. Nastaviti?`)) return;
 
   const langs = ['sr', 'hu', 'en', 'ru'];
   const hasText = langs.some(l => val(`frame-form-desc-${l}`));
