@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/crm.css?v=20261027b">
+<link rel="stylesheet" href="css/catalog.css?v=20261028">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
@@ -21,6 +22,8 @@
         <div class="nav-tab" data-section="orders" onclick="switchSection('orders')">Porudžbine</div>
         <div class="nav-tab" data-section="exams" onclick="switchSection('exams')">Pregledi</div>
         <div class="nav-tab" data-section="debts" onclick="switchSection('debts')">Dugovanja<span class="count-badge" id="debts-count" style="display:none;"></span></div>
+        <div class="nav-tab" data-section="rezervacije" onclick="switchSection('rezervacije')">Rezervacije<span class="count-badge" id="res-count" style="display:none;"></span></div>
+        <div class="nav-tab" data-section="katalog" onclick="switchSection('katalog')">Katalog</div>
         <div class="nav-tab" data-section="analitika" onclick="switchSection('analitika')">Analitika</div>
       </div>
     </div>
@@ -78,6 +81,34 @@
         <input type="text" id="debts-search-name" placeholder="Ime pacijenta..." oninput="renderDebtsTable()">
       </div>
       <div id="debts-table-wrap"></div>
+    </div>
+  </div>
+
+  <div class="section-body" id="section-rezervacije">
+    <div class="full-view">
+      <div class="filters-row res-filters" id="res-filters"></div>
+      <div id="res-table-wrap"></div>
+    </div>
+  </div>
+
+  <div class="section-body" id="section-katalog">
+    <div class="full-view">
+      <div class="filters-row">
+        <input type="text" id="catalog-search" placeholder="Brend, model, šifra..." oninput="renderCatalogGrid()">
+        <select id="catalog-filter-brand" onchange="renderCatalogGrid()"><option value="">Svi brendovi</option></select>
+        <select id="catalog-filter-category" onchange="renderCatalogGrid()">
+          <option value="">Optički i sunčani</option><option value="opticki">Optički</option><option value="suncani">Sunčani</option>
+        </select>
+        <select id="catalog-filter-gender" onchange="renderCatalogGrid()">
+          <option value="">Svi (Ž/M/U/D)</option><option value="zenski">Ženski</option><option value="muski">Muški</option><option value="uniseks">Uniseks</option><option value="deciji">Dečiji</option>
+        </select>
+        <select id="catalog-filter-status" onchange="renderCatalogGrid()">
+          <option value="">Svi statusi</option><option value="sajt">Na sajtu</option><option value="skriven">Skriveni</option><option value="prodat">Prodati</option>
+        </select>
+        <button class="btn-primary" onclick="openAddFrameModal()">+ Novi okvir</button>
+      </div>
+      <div class="cat-count" id="catalog-count"></div>
+      <div class="cat-grid" id="catalog-grid"></div>
     </div>
   </div>
 
@@ -367,6 +398,97 @@
   </div>
 </div>
 
+<!-- Modal: Okvir (katalog) -->
+<div class="modal-overlay" id="frame-modal">
+  <div class="modal">
+    <button type="button" class="modal-close" onclick="cancelFrameForm()" aria-label="Zatvori">&times;</button>
+    <h3 id="frame-modal-title">Novi okvir</h3>
+    <form id="frame-form" onsubmit="saveFrameForm(event)">
+      <datalist id="frame-brand-list"></datalist>
+      <datalist id="frame-material-list"></datalist>
+      <datalist id="sun-type-list"></datalist>
+      <datalist id="sun-material-list"></datalist>
+      <datalist id="uv-list"></datalist>
+      <div class="field-grid">
+        <div><label>Brend</label><input type="text" id="frame-form-brand" list="frame-brand-list" placeholder="Ray-Ban"></div>
+        <div><label>Model</label><input type="text" id="frame-form-model" placeholder="RB5154 Clubmaster"></div>
+        <div><label>Šifra</label><input type="text" id="frame-form-code" placeholder="12345"></div>
+        <div><label>Cena (RSD)</label><input type="number" id="frame-form-price" min="0" placeholder="18900"></div>
+        <div>
+          <label>Vrsta</label>
+          <select id="frame-form-category" style="width:100%;" onchange="toggleFrameSunFields()">
+            <option value="opticki">Optički</option><option value="suncani">Sunčani</option>
+          </select>
+        </div>
+        <div>
+          <label>Pol</label>
+          <select id="frame-form-gender" style="width:100%;">
+            <option value="zenski">Ženski</option><option value="muski">Muški</option><option value="uniseks">Uniseks</option><option value="deciji">Dečiji</option>
+          </select>
+        </div>
+        <div><label>Materijal okvira</label><input type="text" id="frame-form-material" list="frame-material-list" placeholder="acetat"></div>
+        <div><label>Boja</label><input type="text" id="frame-form-color" placeholder="crna / zlatna"></div>
+        <div>
+          <label>Veličina</label><input type="text" id="frame-form-size" placeholder="58-21-145">
+          <div id="frame-size-error" class="field-error" style="display:none;">Format: 58-21-145</div>
+        </div>
+      </div>
+
+      <div id="frame-sun-fields" class="sun-block" style="display:none;">
+        <div class="section-heading" style="margin-top:0;">Sunčana sočiva</div>
+        <div class="field-grid">
+          <div><label>Vrsta sočiva</label><input type="text" id="frame-form-sun-type" list="sun-type-list" placeholder="gradijent"></div>
+          <div><label>Materijal sočiva</label><input type="text" id="frame-form-sun-material" list="sun-material-list" placeholder="polikarbonat"></div>
+          <div><label>UV zaštita</label><input type="text" id="frame-form-uv" list="uv-list" placeholder="UV400"></div>
+          <div>
+            <label>Kategorija filtera</label>
+            <select id="frame-form-filter" style="width:100%;">
+              <option value="">—</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            </select>
+          </div>
+        </div>
+        <label class="frame-checkbox" style="display:inline-flex;"><input type="checkbox" id="frame-form-polarized" class="enter-skip"> Polarizovana</label>
+      </div>
+
+      <label>Fotografije (do 4, prva je glavna)</label>
+      <div class="frame-photos" id="frame-photos"></div>
+
+      <label>Opis</label>
+      <div class="desc-tabs">
+        <button type="button" id="frame-desc-tab-sr" onclick="setFrameDescLang('sr')">SR</button>
+        <button type="button" id="frame-desc-tab-hu" onclick="setFrameDescLang('hu')">HU</button>
+        <button type="button" id="frame-desc-tab-en" onclick="setFrameDescLang('en')">EN</button>
+        <button type="button" id="frame-desc-tab-ru" onclick="setFrameDescLang('ru')">RU</button>
+        <span class="desc-hint">prazan jezik na sajtu prikazuje srpski opis</span>
+      </div>
+      <textarea id="frame-form-desc-sr" class="enter-skip desc-area" rows="3" oninput="onFrameDescInput()" placeholder="Opis na srpskom"></textarea>
+      <textarea id="frame-form-desc-hu" class="enter-skip desc-area" rows="3" oninput="onFrameDescInput()" placeholder="Leírás magyarul"></textarea>
+      <textarea id="frame-form-desc-en" class="enter-skip desc-area" rows="3" oninput="onFrameDescInput()" placeholder="Description in English"></textarea>
+      <textarea id="frame-form-desc-ru" class="enter-skip desc-area" rows="3" oninput="onFrameDescInput()" placeholder="Описание на русском"></textarea>
+
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;">
+        <label class="frame-checkbox"><input type="checkbox" id="frame-form-published" class="enter-skip"> Prikaži na sajtu</label>
+        <label class="frame-checkbox"><input type="checkbox" id="frame-form-sold" class="enter-skip"> Prodat</label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="frame-delete-btn" class="btn-secondary" style="color:#C0392B;border-color:#C0392B;margin-right:auto;" onclick="deleteFrame()">Obriši</button>
+        <button type="button" class="btn-secondary" onclick="cancelFrameForm()">Otkaži</button>
+        <button type="submit" class="btn-primary">Sačuvaj</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Rezervacija -->
+<div class="modal-overlay" id="res-modal">
+  <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('res-modal')" aria-label="Zatvori">&times;</button>
+    <h3>Rezervacija sa sajta</h3>
+    <div id="res-modal-content"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/auth.js?v=20261028"></script>
@@ -374,10 +496,12 @@
 <script src="js/patients.js?v=20261006"></script>
 <script src="js/prescriptions.js?v=20261006"></script>
 <script src="js/orders.js?v=20261027b"></script>
+<script src="js/catalog.js?v=20261028"></script>
+<script src="js/reservations.js?v=20261028"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="js/analytics.js?v=20261027c"></script>
 <script src="js/analytics-fl.js?v=20261027c"></script>
-<script src="js/nav.js?v=20261006"></script>
+<script src="js/nav.js?v=20261028"></script>
 <script>
   requireAuth();
   const user = getCurrentUser();
@@ -385,6 +509,8 @@
 
   loadPatients();
   initDebtBadge();
+  initCatalogFormLists();
+  initReservationsBadge();
 </script>
 </body>
 </html>
