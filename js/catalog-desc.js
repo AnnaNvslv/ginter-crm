@@ -47,20 +47,14 @@ function canonicalValue(value, existing) {
 
 // ── Automatski opis ──
 
-// Tekst u stilu internet prodavnice: ne ponavlja parametre (oni se na sajtu prikazuju
-// posebno), nego objašnjava šta oni znače za kupca. Bez reči „recept".
+// Kratak, činjeničan opis: ne ponavlja parametre (oni se na sajtu prikazuju posebno).
+// Bez reči „recept".
 const DESC_TEXT = {
   introOptical: {
-    sr: n => `${n} je optički okvir namenjen svakodnevnom nošenju.`,
-    hu: n => `${n} – mindennapi viselésre tervezett optikai keret.`,
-    en: n => `${n} is an optical frame designed for everyday wear.`,
-    ru: n => `${n} — оправа для повседневной носки.`,
-  },
-  introOpticalKids: {
-    sr: n => `${n} je dečiji optički okvir prilagođen aktivnom danu deteta.`,
-    hu: n => `${n} – gyermek optikai keret, amely bírja az aktív napokat.`,
-    en: n => `${n} is a children's optical frame built for an active day.`,
-    ru: n => `${n} — детская оправа, рассчитанная на активный день ребёнка.`,
+    sr: n => `${n} je medicinski okvir pogodan za višekratnu ugradnju dioptrijskih sočiva.`,
+    hu: n => `${n} – gyógyászati szemüvegkeret, amelybe a dioptriás lencsék többször is beépíthetők.`,
+    en: n => `${n} is a medical optical frame suitable for repeated fitting of corrective lenses.`,
+    ru: n => `${n} — медицинская оправа, подходящая для многократной установки диоптрийных линз.`,
   },
   introSun: {
     sr: n => `${n} su sunčane naočare za svakodnevnu zaštitu očiju od jakog svetla.`,
@@ -73,44 +67,6 @@ const DESC_TEXT = {
     hu: n => `${n} – gyermek napszemüveg, amely óvja a gyermek érzékeny szemét a naptól.`,
     en: n => `${n} are children's sunglasses that protect sensitive young eyes from the sun.`,
     ru: n => `${n} — детские солнцезащитные очки, которые берегут чувствительные глаза ребёнка от солнца.`,
-  },
-  material: {
-    titan: {
-      sr: 'Titanijum je lagan, čvrst i hipoalergen materijal: okvir se gotovo ne oseća na licu i dugo zadržava oblik.',
-      hu: 'A titán könnyű, erős és antiallergén anyag: a keret szinte nem érezhető az arcon, és hosszú ideig megtartja formáját.',
-      en: 'Titanium is light, strong and hypoallergenic: the frame is barely felt on the face and keeps its shape for years.',
-      ru: 'Титан — лёгкий, прочный и гипоаллергенный материал: оправа почти не ощущается на лице и надолго сохраняет форму.',
-    },
-    acetat: {
-      sr: 'Acetat je kvalitetan materijal bogatih tonova, prijatan na dodir, a drške se lako prilagođavaju obliku glave.',
-      hu: 'Az acetát minőségi, mély színű, kellemes tapintású anyag, a szárak pedig könnyen a fej formájához igazíthatók.',
-      en: 'Acetate is a quality material with rich colour and a pleasant feel, and the temples are easy to adjust to the shape of the head.',
-      ru: 'Ацетат — качественный материал с глубоким цветом, приятный на ощупь, а заушники легко подгоняются по форме головы.',
-    },
-    metal: {
-      sr: 'Metalni okvir je tanak i lagan, diskretnog, klasičnog izgleda.',
-      hu: 'A fémkeret vékony és könnyű, letisztult, klasszikus megjelenéssel.',
-      en: 'The metal frame is thin and light, with a neat, classic look.',
-      ru: 'Металлическая оправа тонкая и лёгкая, с аккуратным классическим силуэтом.',
-    },
-    tr90: {
-      sr: 'TR90 je savitljiv, izuzetno lagan materijal otporan na udarce, pa okvir lako podnosi svakodnevno opterećenje.',
-      hu: 'A TR90 rugalmas, rendkívül könnyű és ütésálló anyag, így a keret jól bírja a mindennapi használatot.',
-      en: 'TR90 is a flexible, ultra-light and impact-resistant material, so the frame easily handles everyday wear.',
-      ru: 'TR90 — гибкий, очень лёгкий и ударопрочный материал, поэтому оправа спокойно переносит ежедневные нагрузки.',
-    },
-    plastika: {
-      sr: 'Plastični okvir je lagan i praktičan za svakodnevnu upotrebu.',
-      hu: 'A műanyag keret könnyű és praktikus a mindennapi használatra.',
-      en: 'The plastic frame is light and practical for everyday use.',
-      ru: 'Пластиковая оправа лёгкая и практичная для повседневного использования.',
-    },
-    kombinovani: {
-      sr: 'Kombinacija metala i acetata spaja lakoću metalnog okvira i udobnost acetata.',
-      hu: 'A fém és az acetát kombinációja egyesíti a fémkeret könnyűségét és az acetát kényelmét.',
-      en: 'The combination of metal and acetate brings together the lightness of metal and the comfort of acetate.',
-      ru: 'Сочетание металла и ацетата объединяет лёгкость металлической оправы и комфорт ацетата.',
-    },
   },
   lensType: {
     gradijent: {
@@ -163,12 +119,6 @@ const DESC_TEXT = {
     en: 'A polarized clip-on is included: in one move the frame becomes sunglasses, so you don\'t need a second pair.',
     ru: 'В комплекте поляризационная накладка-клипон: одним движением оправа превращается в солнцезащитные очки, и вторая пара не нужна.',
   },
-  outroOptical: {
-    sr: 'U Optici Ginter u okvir ugrađujemo sočiva prema vašoj dioptriji: jednožižna, progresivna ili za rad za računarom.',
-    hu: 'A Ginter Optikában a keretbe az Ön dioptriájának megfelelő lencséket építünk: egyfókuszú, progresszív vagy számítógépes munkához valót.',
-    en: 'At Optika Ginter we fit the frame with lenses for your dioptre: single vision, progressive or computer lenses.',
-    ru: 'В «Оптике Гинтер» мы установим в оправу линзы под ваши диоптрии: однофокальные, прогрессивные или для работы за компьютером.',
-  },
 };
 
 function buildFrameDescription(d, lang) {
@@ -178,10 +128,7 @@ function buildFrameDescription(d, lang) {
   const T = DESC_TEXT;
   const parts = [];
 
-  parts.push((isSun ? (kids ? T.introSunKids : T.introSun) : (kids ? T.introOpticalKids : T.introOptical))[lang](name));
-
-  const matKey = (d.material || '').trim().toLowerCase();
-  if (T.material[matKey]) parts.push(T.material[matKey][lang]);
+  parts.push((isSun ? (kids ? T.introSunKids : T.introSun) : T.introOptical)[lang](name));
 
   if (isSun) {
     const lt = T.lensType[(d.sun_lens_type || '').trim().toLowerCase()];
@@ -193,7 +140,6 @@ function buildFrameDescription(d, lang) {
   }
 
   if (d.has_clip_on) parts.push(T.clip[lang]);
-  if (!isSun) parts.push(T.outroOptical[lang]);
   return parts.join(' ');
 }
 
