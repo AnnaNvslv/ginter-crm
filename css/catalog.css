@@ -49,6 +49,12 @@
 .cat-pill-muted { background: #F1F1F1; color: #6B7280; }
 
 #frame-modal .field-grid { grid-template-columns: repeat(3, 1fr); }
+.frame-flags { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
+.discount-type-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
+.discount-type-row input[type="radio"] { width: 20px; height: 20px; }
+.cat-old-price { text-decoration: line-through; color: var(--text-light); font-weight: 400; margin-right: 6px; }
+.cat-pill-sale { background: #FDECEA; color: #A93226; }
+.cat-pill-ucenjeno { background: #FFF4DE; color: #8A5A00; }
 .field-error { color: var(--danger); font-size: 13px; margin-top: 3px; }
 .sun-block { background: var(--section-bg); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; }
 .frame-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }

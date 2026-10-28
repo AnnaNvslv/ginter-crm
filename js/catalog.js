@@ -88,8 +88,10 @@ function renderCatalogGrid() {
       <div class="cat-photo">${f.photos?.[0] ? `<img src="${escapeHtml(f.photos[0])}" alt="" loading="lazy">` : '<span>bez fotografije</span>'}</div>
       <div class="cat-title">${escapeHtml(frameTitle(f))}</div>
       <div class="cat-meta">${escapeHtml(f.code)} · ${FRAME_GENDERS[f.gender] || ''}${f.category === 'suncani' ? ' · sunčani' : ''}</div>
-      <div class="cat-meta cat-price">${fmtMoney(f.price)}</div>
+      <div class="cat-meta cat-price">${f.sale_price != null ? `<span class="cat-old-price">${fmtMoney(f.price)}</span>${fmtMoney(f.sale_price)}` : fmtMoney(f.price)}</div>
       ${frameStatusPill(f)}
+      ${f.sale_price != null ? (f.discount_type === 'ucenjeno' ? '<span class="cat-pill cat-pill-ucenjeno">Ucenjeno</span>' : `<span class="cat-pill cat-pill-sale">Akcija −${framePct(f.price, f.sale_price)}%</span>`) : ''}
+      ${f.has_clip_on ? '<span class="cat-pill cat-pill-muted">klip</span>' : ''}
     </div>
   `).join('');
 }
@@ -126,6 +128,13 @@ function fillFrameForm(f) {
   v('frame-form-uv', f.uv_protection);
   v('frame-form-filter', f.filter_category);
   document.getElementById('frame-form-polarized').checked = !!f.polarized;
+  document.getElementById('frame-form-clip').checked = !!f.has_clip_on;
+  document.getElementById('frame-form-discounted').checked = f.sale_price != null;
+  document.getElementById(f.discount_type === 'ucenjeno' ? 'frame-discount-ucenjeno' : 'frame-discount-akcija').checked = true;
+  v('frame-form-sale-price', f.sale_price);
+  v('frame-form-sale-pct', f.sale_price != null ? framePct(f.price, f.sale_price) : '');
+  v('frame-form-discount-reason', f.discount_reason);
+  toggleFrameDiscount();
   ['sr', 'hu', 'en', 'ru'].forEach(l => v(`frame-form-desc-${l}`, f[`desc_${l}`]));
   document.getElementById('frame-form-published').checked = !!f.is_published;
   document.getElementById('frame-form-sold').checked = !!f.is_sold;
@@ -135,6 +144,41 @@ function fillFrameForm(f) {
   toggleFrameSunFields();
   renderFramePhotos();
   openModal('frame-modal');
+}
+
+function framePct(price, sale) {
+  const p = Number(price), s = Number(sale);
+  return p > 0 && s >= 0 ? Math.round((1 - s / p) * 100) : 0;
+}
+
+function toggleFrameDiscount() {
+  const on = document.getElementById('frame-form-discounted').checked;
+  document.getElementById('frame-discount-fields').style.display = on ? '' : 'none';
+  document.getElementById('frame-discount-error').style.display = 'none';
+  toggleFrameDiscountReason();
+}
+
+function toggleFrameDiscountReason() {
+  const uc = document.getElementById('frame-discount-ucenjeno').checked;
+  document.getElementById('frame-reason-wrap').style.display = uc ? '' : 'none';
+}
+
+// Nova cena ↔ procenat: menja se jedno, drugo se računa.
+function onSalePriceInput() {
+  const price = Number(document.getElementById('frame-form-price').value) || 0;
+  const sale = document.getElementById('frame-form-sale-price').value;
+  document.getElementById('frame-form-sale-pct').value = sale !== '' && price ? framePct(price, sale) : '';
+}
+
+function onSalePctInput() {
+  const price = Number(document.getElementById('frame-form-price').value) || 0;
+  const pct = document.getElementById('frame-form-sale-pct').value;
+  document.getElementById('frame-form-sale-price').value =
+    pct !== '' && price ? Math.round(price * (1 - Number(pct) / 100)) : '';
+}
+
+function onFramePriceInput() {
+  if (document.getElementById('frame-form-discounted').checked) onSalePctInput();
 }
 
 function toggleFrameSunFields() {
@@ -260,11 +304,30 @@ async function saveFrameForm(e) {
     return;
   }
 
+  const price = Number(val('frame-form-price')) || 0;
+  const discounted = document.getElementById('frame-form-discounted').checked;
+  const discountType = document.getElementById('frame-discount-ucenjeno').checked ? 'ucenjeno' : 'akcija';
+  const salePrice = discounted ? Number(val('frame-form-sale-price')) : null;
+  const discountReason = discounted && discountType === 'ucenjeno' ? val('frame-form-discount-reason') : '';
+  const discErr = msg => {
+    const el = document.getElementById('frame-discount-error');
+    el.textContent = msg; el.style.display = '';
+  };
+  if (discounted) {
+    if (val('frame-form-sale-price') === '' || !(salePrice >= 0)) { discErr('Unesite novu cenu ili procenat'); return; }
+    if (!(salePrice < price)) { discErr('Nova cena mora biti manja od redovne cene'); return; }
+    if (discountType === 'ucenjeno' && !discountReason) { discErr('Navedite razlog ucenjenja'); return; }
+  }
+
   const isSun = val('frame-form-category') === 'suncani';
   const filter = val('frame-form-filter');
   const payload = {
     brand, model, code,
-    price: Number(val('frame-form-price')) || 0,
+    price,
+    sale_price: discounted ? salePrice : null,
+    discount_type: discounted ? discountType : null,
+    discount_reason: discountReason || null,
+    has_clip_on: document.getElementById('frame-form-clip').checked,
     gender: val('frame-form-gender'),
     category: val('frame-form-category'),
     material: val('frame-form-material') || null,
