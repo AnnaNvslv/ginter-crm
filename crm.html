@@ -405,13 +405,15 @@
     <h3 id="frame-modal-title">Novi okvir</h3>
     <form id="frame-form" onsubmit="saveFrameForm(event)">
       <datalist id="frame-brand-list"></datalist>
+      <datalist id="frame-model-list"></datalist>
+      <datalist id="frame-color-list"></datalist>
       <datalist id="frame-material-list"></datalist>
       <datalist id="sun-type-list"></datalist>
       <datalist id="sun-material-list"></datalist>
       <datalist id="uv-list"></datalist>
       <div class="field-grid">
-        <div><label>Brend</label><input type="text" id="frame-form-brand" list="frame-brand-list" placeholder="Ray-Ban"></div>
-        <div><label>Model</label><input type="text" id="frame-form-model" placeholder="RB5154 Clubmaster"></div>
+        <div><label>Brend</label><input type="text" id="frame-form-brand" list="frame-brand-list" placeholder="Ray-Ban" oninput="refreshFrameModelSuggestions()" onchange="refreshFrameModelSuggestions()"></div>
+        <div><label>Model</label><input type="text" id="frame-form-model" list="frame-model-list" placeholder="RB5154 Clubmaster"></div>
         <div><label>Šifra</label><input type="text" id="frame-form-code" placeholder="12345"></div>
         <div><label>Cena (RSD)</label><input type="number" id="frame-form-price" min="0" placeholder="18900" oninput="onFramePriceInput()"></div>
         <div>
@@ -427,7 +429,7 @@
           </select>
         </div>
         <div><label>Materijal okvira</label><input type="text" id="frame-form-material" list="frame-material-list" placeholder="acetat"></div>
-        <div><label>Boja</label><input type="text" id="frame-form-color" placeholder="crna / zlatna"></div>
+        <div><label>Boja</label><input type="text" id="frame-form-color" list="frame-color-list" placeholder="crna / zlatna"></div>
         <div>
           <label>Veličina</label><input type="text" id="frame-form-size" placeholder="58-21-145">
           <div id="frame-size-error" class="field-error" style="display:none;">Format: 58-21-145</div>
@@ -479,6 +481,7 @@
         <button type="button" id="frame-desc-tab-hu" onclick="setFrameDescLang('hu')">HU</button>
         <button type="button" id="frame-desc-tab-en" onclick="setFrameDescLang('en')">EN</button>
         <button type="button" id="frame-desc-tab-ru" onclick="setFrameDescLang('ru')">RU</button>
+        <button type="button" class="desc-generate" style="margin-left:8px;border-color:var(--accent);color:var(--accent);background:var(--white);" onclick="generateFrameDescriptions()">✎ Dodaj opis</button>
         <span class="desc-hint">prazan jezik na sajtu prikazuje srpski opis</span>
       </div>
       <textarea id="frame-form-desc-sr" class="enter-skip desc-area" rows="3" oninput="onFrameDescInput()" placeholder="Opis na srpskom"></textarea>
@@ -517,6 +520,7 @@
 <script src="js/prescriptions.js?v=20261006"></script>
 <script src="js/orders.js?v=20261027b"></script>
 <script src="js/catalog.js?v=20261028b"></script>
+<script src="js/catalog-desc.js?v=20261028c"></script>
 <script src="js/reservations.js?v=20261028"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="js/analytics.js?v=20261027c"></script>
