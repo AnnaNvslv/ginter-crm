@@ -134,6 +134,7 @@ function fillFrameForm(f) {
   v('frame-form-sale-price', f.sale_price);
   v('frame-form-sale-pct', f.sale_price != null ? framePct(f.price, f.sale_price) : '');
   v('frame-form-discount-reason', f.discount_reason);
+  ['hu', 'en', 'ru'].forEach(l => v(`frame-form-discount-reason-${l}`, f[`discount_reason_${l}`]));
   toggleFrameDiscount();
   ['sr', 'hu', 'en', 'ru'].forEach(l => v(`frame-form-desc-${l}`, f[`desc_${l}`]));
   document.getElementById('frame-form-published').checked = !!f.is_published;
@@ -309,6 +310,7 @@ async function saveFrameForm(e) {
   const discountType = document.getElementById('frame-discount-ucenjeno').checked ? 'ucenjeno' : 'akcija';
   const salePrice = discounted ? Number(val('frame-form-sale-price')) : null;
   const discountReason = discounted && discountType === 'ucenjeno' ? val('frame-form-discount-reason') : '';
+  const reasonTr = l => discountReason ? val(`frame-form-discount-reason-${l}`) : '';
   const discErr = msg => {
     const el = document.getElementById('frame-discount-error');
     el.textContent = msg; el.style.display = '';
@@ -317,6 +319,7 @@ async function saveFrameForm(e) {
     if (val('frame-form-sale-price') === '' || !(salePrice >= 0)) { discErr('Unesite novu cenu ili procenat'); return; }
     if (!(salePrice < price)) { discErr('Nova cena mora biti manja od redovne cene'); return; }
     if (discountType === 'ucenjeno' && !discountReason) { discErr('Navedite razlog ucenjenja'); return; }
+    if (discountType === 'ucenjeno' && ['hu', 'en', 'ru'].some(l => !reasonTr(l))) { discErr('Upišite razlog na sva 4 jezika (HU, EN, RU) — sajt je na 4 jezika'); return; }
   }
 
   const isSun = val('frame-form-category') === 'suncani';
@@ -327,6 +330,7 @@ async function saveFrameForm(e) {
     sale_price: discounted ? salePrice : null,
     discount_type: discounted ? discountType : null,
     discount_reason: discountReason || null,
+    discount_reason_hu: reasonTr('hu') || null, discount_reason_en: reasonTr('en') || null, discount_reason_ru: reasonTr('ru') || null,
     has_clip_on: document.getElementById('frame-form-clip').checked,
     gender: val('frame-form-gender'),
     category: val('frame-form-category'),

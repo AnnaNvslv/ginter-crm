@@ -1,7 +1,8 @@
 // ═══ KATALOG: predlozi (pamćenje unetih naziva) i automatski opis na 4 jezika ═══
 
 const FRAME_COLORS_SR = ['crna', 'bela', 'braon', 'havana', 'zlatna', 'srebrna', 'siva', 'plava',
-  'zelena', 'crvena', 'bordo', 'roze', 'ljubičasta', 'bež', 'providna'];
+  'zelena', 'crvena', 'bordo', 'roze', 'ljubičasta', 'bež', 'providna', 'pudra', 'krem', 'žuta', 'narandžasta',
+  'tirkizna', 'teget', 'bakarna', 'kristalna', 'zlatno-crna', 'srebrno-crna'];
 
 // ── Predlozi iz već unetih okvira (da se isti brend/model/boja ne pišu različito) ──
 

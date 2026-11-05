@@ -1,5 +1,10 @@
 # FIXES.md — Ginter CRM
 
+## 2026-11-05 — katalog: razlog sniženja na 4 jezika, nove boje
+- `frames.discount_reason_hu / _en / _ru` (SELECT za anon na te kolone). U formi okvira — 3 polja ispod «Razlog ucenjenja»; snimanje traži sva 3 prevoda kad je okvir ucenjen. Postojeći «ogrebotina (klipon)» preveden.
+- Predlozi boja: dodate pudra, krem, žuta, narandžasta, tirkizna, teget, bakarna, kristalna, zlatno-crna, srebrno-crna (sajt ih prevodi)
+- Verzije: catalog.js / catalog-desc.js ?v=20261105
+
 ## 2026-11-05 — limit od 1000 redova: lista pacijenata i dugovi
 - `fetchAllRows()` premešten iz `analytics.js` u `utils.js` (zajednički)
 - Lista pacijenata (`loadPatients`) čita sve redove u stranama po 1000 — bilo je 898 pacijenata, posle 1000 bi novi nestajali sa liste
