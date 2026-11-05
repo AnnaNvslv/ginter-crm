@@ -456,3 +456,18 @@ function debounce(fn, wait = 350) {
     t = setTimeout(() => fn(...args), wait);
   };
 }
+
+// Supabase (PostgREST) vraća najviše 1000 redova po upitu. Analitika učitava cele
+// tabele, pa se ovde čita stranicu po stranicu dok se ne dobiju svi redovi.
+// buildQuery mora da vrati NOV upit pri svakom pozivu i da ima stabilan .order().
+async function fetchAllRows(buildQuery, pageSize = 1000) {
+  const all = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    all.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return { data: all, error: null };
+}
+

@@ -8,11 +8,12 @@ let pendingQuickAddDate = null;
 let dupCheckTimer = null;
 
 async function loadPatients() {
-  const { data, error } = await sb
+  const { data, error } = await fetchAllRows(() => sb
     .from('patients')
     .select('*')
     .is('deleted_at', null)
-    .order('last_name');
+    .order('last_name')
+    .order('id'));
 
   if (error) { toast('Greška pri učitavanju pacijenata', true); return; }
   currentPatients = data;

@@ -1358,16 +1358,17 @@ let debtRecords = [];
 let debtorPatientIds = new Set();
 
 async function loadDebtsData() {
-  const { data: orders, error } = await sb
+  const { data: orders, error } = await fetchAllRows(() => sb
     .from('orders')
     .select('*')
     .eq('has_installment', true)
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .order('id'));
 
   if (error || !orders || !orders.length) { debtRecords = []; debtorPatientIds = new Set(); return; }
 
   const orderIds = orders.map(o => o.id);
-  const { data: installments } = await sb.from('installments').select('*').in('order_id', orderIds);
+  const { data: installments } = await fetchAllRows(() => sb.from('installments').select('*').in('order_id', orderIds).order('id'));
 
   const paidByOrder = {};
   const lastPayByOrder = {};

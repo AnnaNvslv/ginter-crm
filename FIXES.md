@@ -1,5 +1,11 @@
 # FIXES.md — Ginter CRM
 
+## 2026-11-05 — limit od 1000 redova: lista pacijenata i dugovi
+- `fetchAllRows()` premešten iz `analytics.js` u `utils.js` (zajednički)
+- Lista pacijenata (`loadPatients`) čita sve redove u stranama po 1000 — bilo je 898 pacijenata, posle 1000 bi novi nestajali sa liste
+- Dugovi (`loadDebtsData`): porudžbine na rate i uplate takođe kroz `fetchAllRows`
+- Verzije: utils/patients/orders/analytics ?v=20261105
+
 ## 2026-10-28 — Rezervacije: vraćanje okvira na sajt
 - Если статус брони меняют с «Kupljena» на любой другой (и других купленных броней этой оправы нет), оправа снова получает is_sold=false и возвращается на сайт. Раньше оставалась «проданной» и пропадала из каталога
 - Оправа 0184 (Guess GU50221) возвращена на сайт вручную
