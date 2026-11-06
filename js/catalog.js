@@ -22,6 +22,18 @@ function frameTitle(f) {
   return `${f.brand || ''} ${f.model || ''}`.trim();
 }
 
+const NEW_DAYS = 30;
+const todayIso = () => new Date().toISOString().slice(0, 10);
+const frameIsNew = f => !!f.new_until && f.new_until >= todayIso();
+function addDaysIso(days) {
+  const d = new Date(); d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function fmtIsoDate(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}.`;
+}
+
 function frameStatusPill(f) {
   if (f.is_sold) return '<span class="cat-pill cat-pill-muted">Prodat</span>';
   if (f.is_published) return '<span class="cat-pill cat-pill-ok">Na sajtu</span>';
@@ -73,8 +85,14 @@ function renderCatalogGrid() {
     if (status === 'sajt' && !(f.is_published && !f.is_sold)) return false;
     if (status === 'skriven' && (f.is_published || f.is_sold)) return false;
     if (status === 'prodat' && !f.is_sold) return false;
+    if (status === 'istaknuto' && !f.is_featured) return false;
+    if (status === 'novo' && !frameIsNew(f)) return false;
     return true;
   });
+  if (document.getElementById('catalog-sort').value === 'sajt') {
+    const onSite = f => f.is_published && !f.is_sold;
+    rows.sort((a, b) => (onSite(b) - onSite(a)) || ((a.sort_order || 0) - (b.sort_order || 0)));
+  }
 
   const wrap = document.getElementById('catalog-grid');
   document.getElementById('catalog-count').textContent = `${rows.length} od ${catalogRows.length}`;
@@ -89,6 +107,8 @@ function renderCatalogGrid() {
       <div class="cat-title">${escapeHtml(frameTitle(f))}</div>
       <div class="cat-meta">${escapeHtml(f.code)} · ${FRAME_GENDERS[f.gender] || ''}${f.category === 'suncani' ? ' · sunčani' : ''}</div>
       <div class="cat-meta cat-price">${f.sale_price != null ? `<span class="cat-old-price">${fmtMoney(f.price)}</span>${fmtMoney(f.sale_price)}` : fmtMoney(f.price)}</div>
+      ${f.is_featured ? '<span class="cat-pill cat-pill-featured">★ Istaknuto</span>' : ''}
+      ${frameIsNew(f) ? '<span class="cat-pill cat-pill-new">Novo</span>' : ''}
       ${frameStatusPill(f)}
       ${f.sale_price != null ? (f.discount_type === 'ucenjeno' ? '<span class="cat-pill cat-pill-ucenjeno">Ucenjeno</span>' : `<span class="cat-pill cat-pill-sale">Akcija −${framePct(f.price, f.sale_price)}%</span>`) : ''}
       ${f.has_clip_on ? '<span class="cat-pill cat-pill-muted">klip</span>' : ''}
@@ -99,7 +119,7 @@ function renderCatalogGrid() {
 // ── Forma ──
 
 function openAddFrameModal() {
-  fillFrameForm({ id: crypto.randomUUID(), _isNew: true, gender: 'zenski', category: 'opticki', is_published: true, photos: [] });
+  fillFrameForm({ id: crypto.randomUUID(), _isNew: true, gender: 'zenski', category: 'opticki', is_published: true, photos: [], new_until: addDaysIso(NEW_DAYS) });
 }
 
 function openEditFrameModal(id) {
@@ -139,6 +159,10 @@ function fillFrameForm(f) {
   ['sr', 'hu', 'en', 'ru'].forEach(l => v(`frame-form-desc-${l}`, f[`desc_${l}`]));
   document.getElementById('frame-form-published').checked = !!f.is_published;
   document.getElementById('frame-form-sold').checked = !!f.is_sold;
+  document.getElementById('frame-form-featured').checked = !!f.is_featured;
+  document.getElementById('frame-form-new').checked = frameIsNew(f);
+  document.getElementById('frame-form-new').dataset.until = frameIsNew(f) ? f.new_until : '';
+  document.getElementById('frame-new-until').textContent = frameIsNew(f) ? `do ${fmtIsoDate(f.new_until)}` : `(${NEW_DAYS} dana)`;
   document.getElementById('frame-delete-btn').style.display = f._isNew ? 'none' : '';
   document.getElementById('frame-size-error').style.display = 'none';
   setFrameDescLang('sr');
@@ -349,6 +373,10 @@ async function saveFrameForm(e) {
     photos: catalogDraftPhotos,
     is_published: document.getElementById('frame-form-published').checked,
     is_sold: document.getElementById('frame-form-sold').checked,
+    is_featured: document.getElementById('frame-form-featured').checked,
+    // Novo: zadržava postojeći rok; tek uključeno → danas + 30 dana; isključeno → bez oznake
+    new_until: document.getElementById('frame-form-new').checked
+      ? (document.getElementById('frame-form-new').dataset.until || addDaysIso(NEW_DAYS)) : null,
     updated_at: new Date().toISOString(),
   };
 
@@ -366,6 +394,7 @@ async function saveFrameForm(e) {
 
     toast(isNew ? 'Okvir dodat' : 'Okvir sačuvan');
     closeModal('frame-modal');
+    await sb.rpc('arrange_frames'); // okvir odmah dobija svoje mesto na sajtu
     await loadCatalogSection();
   } finally {
     savingFrame = false;
@@ -397,4 +426,21 @@ function initCatalogFormLists() {
   fill('sun-type-list', SUN_LENS_TYPES);
   fill('sun-material-list', SUN_LENS_MATERIALS);
   fill('uv-list', UV_OPTIONS);
+}
+
+// ── Redosled na sajtu ──
+// Funkcija arrange_frames() u Supabase-u računa frames.sort_order po pravilima:
+// ★ istaknuti (od najskupljeg, bez istog brenda zaredom) → Novo → ostali (brendovi naizmenično,
+// svaki dan malo drugačije) → do 5.000 RSD → ucenjeni. Pokreće se i sama svake noći u 03:15.
+async function arrangeCatalog() {
+  const btn = document.getElementById('catalog-arrange-btn');
+  btn.disabled = true;
+  try {
+    const { error } = await sb.rpc('arrange_frames');
+    if (error) { console.error(error); toast('Greška pri uređivanju redosleda', true); return; }
+    toast('Redosled na sajtu je ažuriran');
+    await loadCatalogSection();
+  } finally {
+    btn.disabled = false;
+  }
 }

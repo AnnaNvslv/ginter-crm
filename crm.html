@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/crm.css?v=20261027b">
-<link rel="stylesheet" href="css/catalog.css?v=20261028b">
+<link rel="stylesheet" href="css/catalog.css?v=20261106">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
@@ -103,8 +103,12 @@
           <option value="">Svi (Ž/M/U/D)</option><option value="zenski">Ženski</option><option value="muski">Muški</option><option value="uniseks">Uniseks</option><option value="deciji">Dečiji</option>
         </select>
         <select id="catalog-filter-status" onchange="renderCatalogGrid()">
-          <option value="">Svi statusi</option><option value="sajt">Na sajtu</option><option value="skriven">Skriveni</option><option value="prodat">Prodati</option>
+          <option value="">Svi statusi</option><option value="sajt">Na sajtu</option><option value="istaknuto">★ Istaknuti</option><option value="novo">Novo</option><option value="skriven">Skriveni</option><option value="prodat">Prodati</option>
         </select>
+        <select id="catalog-sort" onchange="renderCatalogGrid()" title="Redosled u listi">
+          <option value="">Poslednje dodati</option><option value="sajt">Kao na sajtu</option>
+        </select>
+        <button class="btn-secondary" id="catalog-arrange-btn" onclick="arrangeCatalog()" title="Rasporedi okvire na sajtu po pravilima: istaknuti → novi → ostali (brendovi naizmenično) → do 5.000 RSD → ucenjeni">⇅ Uredi redosled na sajtu</button>
         <button class="btn-primary" onclick="openAddFrameModal()">+ Novi okvir</button>
       </div>
       <div class="cat-count" id="catalog-count"></div>
@@ -498,6 +502,10 @@
         <label class="frame-checkbox"><input type="checkbox" id="frame-form-published" class="enter-skip"> Prikaži na sajtu</label>
         <label class="frame-checkbox"><input type="checkbox" id="frame-form-sold" class="enter-skip"> Prodat</label>
       </div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;">
+        <label class="frame-checkbox" title="Istaknuti okviri se na sajtu prikazuju prvi"><input type="checkbox" id="frame-form-featured" class="enter-skip"> ★ Istaknuto — prikaži prvo</label>
+        <label class="frame-checkbox" title="Oznaka „Novo” na sajtu, 30 dana"><input type="checkbox" id="frame-form-new" class="enter-skip"> Novo <span id="frame-new-until" style="color:#6B7280;font-weight:400;"></span></label>
+      </div>
 
       <div class="modal-actions">
         <button type="button" id="frame-delete-btn" class="btn-secondary" style="color:#C0392B;border-color:#C0392B;margin-right:auto;" onclick="deleteFrame()">Obriši</button>
@@ -524,7 +532,7 @@
 <script src="js/patients.js?v=20261105"></script>
 <script src="js/prescriptions.js?v=20261006"></script>
 <script src="js/orders.js?v=20261105"></script>
-<script src="js/catalog.js?v=20261105"></script>
+<script src="js/catalog.js?v=20261106"></script>
 <script src="js/catalog-desc.js?v=20261105"></script>
 <script src="js/reservations.js?v=20261028b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>

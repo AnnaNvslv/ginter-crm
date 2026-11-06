@@ -1,5 +1,12 @@
 # FIXES.md — Ginter CRM
 
+## 2026-11-06 — katalog: istaknuti okviri, Novo, redosled na sajtu
+- Forma okvira: «★ Istaknuto — prikaži prvo» (`frames.is_featured`) i «Novo» (`frames.new_until`; novi okvir — uključeno, 30 dana; pored se vidi do kog datuma)
+- Dugme «⇅ Uredi redosled na sajtu» → `rpc('arrange_frames')`: istaknuti → novi → ostali (brendovi naizmenično) → do 5.000 RSD → ucenjeni. Isto se radi automatski posle čuvanja okvira i svake noći u 03:15 (pg_cron)
+- Filter statusa: + «★ Istaknuti», «Novo»; novi izbor «Kao na sajtu» prikazuje listu redom kao na sajtu
+- Oznake na kartici: «★ Istaknuto» (crno-zlatna), «Novo»
+- Verzije: catalog.js / catalog.css ?v=20261106
+
 ## 2026-11-05 — katalog: razlog sniženja na 4 jezika, nove boje
 - `frames.discount_reason_hu / _en / _ru` (SELECT za anon na te kolone). U formi okvira — 3 polja ispod «Razlog ucenjenja»; snimanje traži sva 3 prevoda kad je okvir ucenjen. Postojeći «ogrebotina (klipon)» preveden.
 - Predlozi boja: dodate pudra, krem, žuta, narandžasta, tirkizna, teget, bakarna, kristalna, zlatno-crna, srebrno-crna (sajt ih prevodi)
