@@ -5,7 +5,8 @@
 - Kartica pacijenta: oznaka «Import knjiga»; žuto upozorenje «Moguće da pacijent ima još jednu karticu» (isti telefon + isto ime) sa dugmadima Otvori / Spoji kartice / Nije isti pacijent; red «Ista porodica / isti telefon» + ručno «+ Poveži»
 - Nova tabela `patient_links` (kind: family / not_duplicate, RLS staff_only) i RPC `merge_patients(src, dst)` — prebacuje recepte, porudžbine i rezervacije, briše (soft) drugu karticu
 - Red «Ista porodica» se prikazuje samo kad ima povezanih; «+ Poveži» premešteno u zaglavlje kartice
-- Verzije: patients.js ?v=20261109b, crm.css ?v=20261109
+- Bug: u kartici porudžbine kontaktnih sočiva povezani recept se nije prikazivao — sada se prikazuje (OD/OS, PD, BC/DIA) ili «Recept nije povezan»
+- Verzije: patients.js ?v=20261109b, orders.js / crm.css ?v=20261109
 
 ## 2026-11-06 — katalog: istaknuti okviri, Novo, redosled na sajtu
 - Forma okvira: «★ Istaknuto — prikaži prvo» (`frames.is_featured`) i «Novo» (`frames.new_until`; novi okvir — uključeno, 30 dana; pored se vidi do kog datuma)

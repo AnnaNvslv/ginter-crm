@@ -166,10 +166,16 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
 
   let clHtml = '';
   if (hasCl) {
+    // Recept za sočiva se ranije nije prikazivao u kartici porudžbine sočiva (bio je povezan, ali nevidljiv).
+    const clRx = rxLinks.find(r => r.purpose === 'kontaktna sočiva') || (o.order_type === 'contact_lenses' ? rxLinks[0] : null) || null;
+    const clRxHtml = clRx
+      ? `<div style="color:var(--text-light);font-size:15px;line-height:1.6;margin-bottom:10px;">${clRx.purpose !== 'kontaktna sočiva' ? `<div>${escapeHtml(clRx.purpose)}:</div>` : ''}${rxDetailLines(clRx)}</div>`
+      : `<div style="color:var(--text-light);font-size:14px;margin-bottom:10px;">Recept nije povezan</div>`;
     if (clItems.length) {
       clHtml = `
         <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;">
           <div style="font-weight:700;color:var(--accent);margin-bottom:8px;">kontaktna sočiva</div>
+          ${clRxHtml}
           ${clItems.map(c => `
             <div class="item-row"><span>${clItems.length > 1 || c.eye ? `${eyeLabel(c.eye)}: ` : ''}${c.cl_name || '—'} × ${c.qty}</span><span>${fmtMoney(clTotal(c.price, c.qty))}</span></div>
             ${(c.cl_bc || c.cl_diopters || c.cl_replacement_period) ? `<div style="color:var(--text-light);font-size:14px;margin:-2px 0 6px;">${[c.cl_bc && `BC ${c.cl_bc}`, c.cl_diopters, c.cl_replacement_period && `zamena: ${c.cl_replacement_period}`].filter(Boolean).join(' · ')}</div>` : ''}
@@ -177,6 +183,7 @@ function renderOrderCard(o, frames, lenses, installments, rxLinks, clItems = [])
         </div>`;
     } else {
       clHtml = `
+        ${clRxHtml}
         <div class="kv-row">
           <span><b>Naziv:</b> ${o.cl_name || '—'}</span>
           <span><b>BC:</b> ${o.cl_bc ?? '—'}</span>
