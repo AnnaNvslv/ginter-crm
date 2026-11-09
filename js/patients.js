@@ -6,6 +6,7 @@ let activeTab = 'prescriptions';
 // Postavlja se samo u tom lancu i nestaje čim se iskoristi ili lanac prekine.
 let pendingQuickAddDate = null;
 let dupCheckTimer = null;
+let patientLinks = []; // patient_links: ručne veze (family) i oznake «nije isti pacijent» (not_duplicate)
 
 async function loadPatients() {
   const { data, error } = await fetchAllRows(() => sb
@@ -17,7 +18,13 @@ async function loadPatients() {
 
   if (error) { toast('Greška pri učitavanju pacijenata', true); return; }
   currentPatients = data;
+  await loadPatientLinks();
   renderPatientList();
+}
+
+async function loadPatientLinks() {
+  const { data, error } = await sb.from('patient_links').select('*');
+  patientLinks = error ? [] : (data || []);
 }
 
 function fullName(p) {
@@ -112,6 +119,7 @@ async function renderPatientCard() {
         <div class="badges">
           ${patient.tkt ? `<span class="badge">TKT</span>` : ''}
           ${patient.phone ? `<span class="badge">${patient.phone}</span>` : ''}
+          ${(patient.notes || '').startsWith('[IMPORT KNJIGA]') ? `<span class="badge badge-import" title="Uvezeno iz stare knjige (Excel 2019–2023)">Import knjiga</span>` : ''}
         </div>
       </div>
       <div style="display:flex;gap:10px;">
@@ -121,6 +129,8 @@ async function renderPatientCard() {
         <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePatient()">Obriši</button>
       </div>
     </div>
+
+    ${renderRelatedPatients(patient)}
 
     <div class="tabs">
       <div class="tab ${activeTab === 'prescriptions' ? 'active' : ''}" data-tab="prescriptions" onclick="switchTab('prescriptions')">Recepti <span class="tab-count" id="tab-count-prescriptions">${rxCount}</span></div>
@@ -343,4 +353,130 @@ async function deletePatient() {
   showPatientList();
   toast('Pacijent obrisan');
   await loadPatients();
+}
+
+
+// ═══ POVEZANI PACIJENTI: porodica (isti telefon / ručna veza) i moguće duple kartice ═══
+// Isti telefon + isto ime (a različito prezime) = moguće ista osoba sa dve kartice → žuto upozorenje.
+// Isti telefon + drugo ime = porodica. Ništa se ne spaja automatski — samo dugmetom «Spoji kartice».
+function unaccLower(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'dj');
+}
+
+function usablePhone(p) {
+  const d = normalizePhoneDigits(p.phone);
+  return d.length >= 6 && !/^0+$/.test(d) ? d : '';
+}
+
+function linkBetween(a, b, kind) {
+  return patientLinks.find(l => l.kind === kind &&
+    ((l.patient_a === a && l.patient_b === b) || (l.patient_a === b && l.patient_b === a)));
+}
+
+function relatedPatients(patient) {
+  const dups = [], family = [];
+  const seen = new Set([patient.id]);
+  const phone = usablePhone(patient);
+  const first = unaccLower(patient.first_name).trim();
+  if (phone) {
+    currentPatients.forEach(o => {
+      if (seen.has(o.id) || usablePhone(o) !== phone) return;
+      seen.add(o.id);
+      const sameFirst = first && unaccLower(o.first_name).trim() === first;
+      if (sameFirst && !linkBetween(patient.id, o.id, 'not_duplicate')) dups.push(o);
+      else family.push({ p: o, link: linkBetween(patient.id, o.id, 'family') });
+    });
+  }
+  patientLinks.filter(l => l.kind === 'family' && (l.patient_a === patient.id || l.patient_b === patient.id)).forEach(l => {
+    const otherId = l.patient_a === patient.id ? l.patient_b : l.patient_a;
+    if (seen.has(otherId)) return;
+    const o = currentPatients.find(x => x.id === otherId);
+    if (o) { seen.add(o.id); family.push({ p: o, link: l }); }
+  });
+  return { dups, family };
+}
+
+function renderRelatedPatients(patient) {
+  const { dups, family } = relatedPatients(patient);
+  const dupHtml = dups.map(o => `
+    <div class="dup-alert">
+      <div class="dup-alert-title">⚠ Moguće da pacijent ima još jednu karticu</div>
+      <div class="dup-alert-text">Isti telefon i ime: <a onclick="openPatient('${o.id}')">${escapeHtml(fullName(o))}</a>${o.visit_date ? ' · poseta ' + fmtDateP(o.visit_date, o.visit_date_prec) : ''}</div>
+      <div class="dup-alert-actions">
+        <button class="btn-secondary" onclick="openPatient('${o.id}')">Otvori karticu</button>
+        <button class="btn-secondary" onclick="mergePatientCards('${o.id}')">Spoji kartice</button>
+        <button class="btn-secondary" onclick="markNotDuplicate('${o.id}')">Nije isti pacijent</button>
+      </div>
+    </div>`).join('');
+  const chips = family.map(f => `
+    <span class="link-chip"><a onclick="openPatient('${f.p.id}')">${escapeHtml(fullName(f.p))}</a>${f.link ? `<button title="Ukloni vezu" onclick="removePatientLink('${f.link.id}')">×</button>` : ''}</span>`).join('');
+  return `${dupHtml}
+    <div class="family-row">
+      <span class="family-label">👥 Ista porodica / isti telefon:</span>
+      ${chips || '<span class="family-none">—</span>'}
+      <button class="link-chip link-chip-add" onclick="openLinkPatientModal()">+ Poveži</button>
+    </div>`;
+}
+
+async function markNotDuplicate(otherId) {
+  const { error } = await sb.from('patient_links').insert({ patient_a: activePatientId, patient_b: otherId, kind: 'not_duplicate', created_by: getCurrentUser()?.name || null });
+  if (error) { toast('Greška pri čuvanju', true); return; }
+  await loadPatientLinks();
+  toast('Označeno: različiti pacijenti');
+  await renderPatientCard();
+}
+
+async function removePatientLink(linkId) {
+  if (!confirm('Ukloniti vezu između ovih pacijenata?')) return;
+  const { error } = await sb.from('patient_links').delete().eq('id', linkId);
+  if (error) { toast('Greška pri brisanju veze', true); return; }
+  await loadPatientLinks();
+  await renderPatientCard();
+}
+
+// Spajanje: zadržava se kartica koja NIJE iz uvoza knjige (ili starija), druga se briše,
+// a njeni recepti i porudžbine prelaze u zadržanu karticu.
+async function mergePatientCards(otherId) {
+  const a = currentPatients.find(p => p.id === activePatientId);
+  const b = currentPatients.find(p => p.id === otherId);
+  if (!a || !b) return;
+  const isImp = p => (p.notes || '').startsWith('[IMPORT KNJIGA]');
+  let keep = a, drop = b;
+  if (isImp(a) && !isImp(b)) { keep = b; drop = a; }
+  else if (isImp(a) === isImp(b) && (b.created_at || '') < (a.created_at || '')) { keep = b; drop = a; }
+  if (!confirm(`Spojiti kartice?\n\nRecepti i porudžbine iz kartice „${fullName(drop)}“ prelaze u karticu „${fullName(keep)}“, a kartica „${fullName(drop)}“ se briše.\n\nOvo se ne može poništiti iz CRM-a.`)) return;
+  const { data, error } = await sb.rpc('merge_patients', { src: drop.id, dst: keep.id });
+  if (error) { toast('Greška pri spajanju', true); return; }
+  toast('Spojeno: ' + data);
+  await loadPatients();
+  await openPatient(keep.id);
+}
+
+function openLinkPatientModal() {
+  document.getElementById('link-search').value = '';
+  document.getElementById('link-results').innerHTML = '';
+  openModal('link-modal');
+  setTimeout(() => document.getElementById('link-search').focus(), 0);
+}
+
+function searchLinkPatients() {
+  const tokens = document.getElementById('link-search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const box = document.getElementById('link-results');
+  if (!tokens.length) { box.innerHTML = ''; return; }
+  const res = currentPatients.filter(p => p.id !== activePatientId && tokens.every(t =>
+    [p.first_name, p.last_name, p.phone].filter(Boolean).join(' ').toLowerCase().includes(t))).slice(0, 15);
+  box.innerHTML = res.map(p => `
+    <div class="link-result" onclick="addFamilyLink('${p.id}')">
+      <div><b>${escapeHtml(fullName(p))}</b><div class="meta">${p.phone || 'bez telefona'}</div></div>
+      <span>Poveži →</span>
+    </div>`).join('') || '<div class="meta" style="padding:8px 0;">Nema rezultata</div>';
+}
+
+async function addFamilyLink(otherId) {
+  const { error } = await sb.from('patient_links').insert({ patient_a: activePatientId, patient_b: otherId, kind: 'family', created_by: getCurrentUser()?.name || null });
+  if (error) { toast(error.code === '23505' ? 'Veza već postoji' : 'Greška pri čuvanju', true); return; }
+  closeModal('link-modal');
+  await loadPatientLinks();
+  toast('Pacijenti povezani');
+  await renderPatientCard();
 }

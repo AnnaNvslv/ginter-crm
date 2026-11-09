@@ -1,5 +1,11 @@
 # FIXES.md — Ginter CRM
 
+## 2026-11-09 — uvoz stare knjige (KNJIGA.xlsx) i povezani pacijenti
+- Uvezeno iz Excel knjige 2019–2023: 1238 novih pacijenata, 192 lista dodato postojećim; 2658 recepata, 1908 porudžbina (sve plaćene, bez dugova). Sve označeno: `notes` počinje sa `[IMPORT KNJIGA]`, `created_by = 'import_knjiga'`. Nazivi sočiva svedeni na šifarnik (`lens_catalog`), šifre okvira i br. porudžbine dopunjeni nulom do 4 cifre. Rezervna kopija pre uvoza: šema `imp` (`imp.bk_*`), dnevnik uvoza `imp.log`
+- Kartica pacijenta: oznaka «Import knjiga»; žuto upozorenje «Moguće da pacijent ima još jednu karticu» (isti telefon + isto ime) sa dugmadima Otvori / Spoji kartice / Nije isti pacijent; red «Ista porodica / isti telefon» + ručno «+ Poveži»
+- Nova tabela `patient_links` (kind: family / not_duplicate, RLS staff_only) i RPC `merge_patients(src, dst)` — prebacuje recepte, porudžbine i rezervacije, briše (soft) drugu karticu
+- Verzije: patients.js / crm.css ?v=20261109
+
 ## 2026-11-06 — katalog: istaknuti okviri, Novo, redosled na sajtu
 - Forma okvira: «★ Istaknuto — prikaži prvo» (`frames.is_featured`) i «Novo» (`frames.new_until`; novi okvir — uključeno, 30 dana; pored se vidi do kog datuma)
 - Dugme «⇅ Uredi redosled na sajtu» → `rpc('arrange_frames')`: istaknuti → novi → ostali (brendovi naizmenično) → do 5.000 RSD → ucenjeni. Isto se radi automatski posle čuvanja okvira i svake noći u 03:15 (pg_cron)

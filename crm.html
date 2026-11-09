@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/crm.css?v=20261027b">
+<link rel="stylesheet" href="css/crm.css?v=20261109">
 <link rel="stylesheet" href="css/catalog.css?v=20261106">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
@@ -165,6 +165,18 @@
 </div>
 
 <!-- Modal: Recept -->
+<div class="modal-overlay" id="link-modal">
+  <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('link-modal')" aria-label="Zatvori">&times;</button>
+    <h3 style="margin-bottom:12px;">Poveži sa pacijentom (porodica)</h3>
+    <input type="text" id="link-search" placeholder="Ime, prezime ili telefon" oninput="searchLinkPatients()" style="width:100%;">
+    <div id="link-results" style="margin-top:10px;max-height:360px;overflow:auto;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" onclick="closeModal('link-modal')">Zatvori</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="rx-modal">
   <div class="modal">
     <button type="button" class="modal-close" onclick="closeModal('rx-modal'); pendingQuickAddDate=null;" aria-label="Zatvori">&times;</button>
@@ -529,7 +541,7 @@
 <script src="js/config.js"></script>
 <script src="js/auth.js?v=20261028"></script>
 <script src="js/utils.js?v=20261105"></script>
-<script src="js/patients.js?v=20261105"></script>
+<script src="js/patients.js?v=20261109"></script>
 <script src="js/prescriptions.js?v=20261006"></script>
 <script src="js/orders.js?v=20261105"></script>
 <script src="js/catalog.js?v=20261106"></script>
