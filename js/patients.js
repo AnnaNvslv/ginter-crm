@@ -125,6 +125,7 @@ async function renderPatientCard() {
       <div style="display:flex;gap:10px;">
         <button class="btn-primary" onclick="quickAddPrescription()">+ Recept</button>
         <button class="btn-primary" onclick="quickAddOrder()">+ Porudžbina</button>
+        <button class="btn-secondary" onclick="openLinkPatientModal()" title="Poveži sa članom porodice">+ Poveži</button>
         <button class="btn-secondary" onclick="openEditPatientModal()">Izmeni</button>
         <button class="btn-secondary" style="color:#C0392B;border-color:#C0392B;" onclick="deletePatient()">Obriši</button>
       </div>
@@ -410,12 +411,12 @@ function renderRelatedPatients(patient) {
     </div>`).join('');
   const chips = family.map(f => `
     <span class="link-chip"><a onclick="openPatient('${f.p.id}')">${escapeHtml(fullName(f.p))}</a>${f.link ? `<button title="Ukloni vezu" onclick="removePatientLink('${f.link.id}')">×</button>` : ''}</span>`).join('');
-  return `${dupHtml}
+  // Red porodice se prikazuje samo kad postoje povezani pacijenti; ručno povezivanje je dugme u zaglavlju.
+  return `${dupHtml}${chips ? `
     <div class="family-row">
       <span class="family-label">👥 Ista porodica / isti telefon:</span>
-      ${chips || '<span class="family-none">—</span>'}
-      <button class="link-chip link-chip-add" onclick="openLinkPatientModal()">+ Poveži</button>
-    </div>`;
+      ${chips}
+    </div>` : ''}`;
 }
 
 async function markNotDuplicate(otherId) {
